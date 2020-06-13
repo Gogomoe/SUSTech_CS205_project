@@ -2,6 +2,7 @@
 #define CS205_PROJECT_MATRIX_H
 
 #include <memory>
+#include <opencv2/core/mat.hpp>
 
 namespace matrix {
 
@@ -34,6 +35,14 @@ namespace matrix {
     public:
         Matrix(int rows, int cols) : rows_(rows), cols_(cols), mat_ptr_(new T[rows * cols]) {}
 
+        explicit Matrix(const cv::Mat_<T> &mat) : Matrix(mat.rows, mat.cols) {
+            for (int row = 0; row < rows_; ++row) {
+                for (int col = 0; col < cols_; ++col) {
+                    mat_ptr_[row * cols_ + col] = mat(row, col);
+                }
+            }
+        }
+
         ~Matrix() {
             mat_ptr_.reset();
         }
@@ -62,6 +71,16 @@ namespace matrix {
         Vector<T> operator[](int row) {
             checkBound(row, 0, rows_);
             return Vector<T>(row, cols_, mat_ptr_);
+        }
+
+        explicit operator cv::Mat_<T>() const {
+            cv::Mat_<T> mat(rows_, cols_);
+            for (int row = 0; row < rows_; ++row) {
+                for (int col = 0; col < cols_; ++col) {
+                    mat(row, col) = mat_ptr_[row * cols_ + col];
+                }
+            }
+            return mat;
         }
     };
 

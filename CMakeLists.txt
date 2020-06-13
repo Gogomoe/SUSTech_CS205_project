@@ -5,4 +5,11 @@ set(CMAKE_CXX_STANDARD 17)
 
 aux_source_directory(src DIR_SRC)
 
+FIND_PACKAGE(OpenCV REQUIRED)
+include_directories(
+        ${PROJECT_SOURCE_DIR}
+        "/usr/local/include/opencv4/opencv2"
+)
+
 add_executable(CS205_project ${DIR_SRC})
+target_link_libraries(CS205_project ${OpenCV_LIBS})

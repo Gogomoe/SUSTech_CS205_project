@@ -1,5 +1,5 @@
-#ifndef CS205_PROJECT_MATRIX_H
-#define CS205_PROJECT_MATRIX_H
+#ifndef CS205_PROJECT_MATRIX_HPP
+#define CS205_PROJECT_MATRIX_HPP
 
 #include <memory>
 #include <opencv2/core/mat.hpp>
@@ -84,12 +84,14 @@ namespace matrix {
             return mat;
         }
 
-        Matrix<T>& operator+(Matrix<T>&, Matrix<T>&);
+        template <class E>
+        friend Matrix<E>& operator+(Matrix<E> const&, Matrix<E> const&);
 
-        friend Matrix<T>& operator-(Matrix<T>&, Matrix<T>&);
+        template <class E>
+        friend Matrix<E>& operator-(Matrix<E> const&, Matrix<E> const&);
 
         Matrix<T>& operator-(Matrix<T> &);
     };
 }
 
-#endif //CS205_PROJECT_MATRIX_H
+#endif //CS205_PROJECT_MATRIX_HPP

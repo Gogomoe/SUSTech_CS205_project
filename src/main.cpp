@@ -2,7 +2,7 @@
 #include <random>
 #include <opencv2/highgui/highgui.hpp>
 #include <iomanip>
-#include "matrix.h"
+#include "matrix.hpp"
 
 using namespace matrix;
 using namespace std;
@@ -14,14 +14,11 @@ void testVector();
 void testOpencvMat();
 
 int main() {
-
     testMatrix();
     testVector();
     testOpencvMat();
-
     return 0;
 }
-
 
 void testMatrix() {
     random_device rd;
@@ -53,7 +50,6 @@ void testVector() {
         cout << "catch " << e.what() << endl;
     }
 }
-
 
 void testOpencvMat() {
     using namespace cv;

@@ -33,9 +33,10 @@ namespace matrix {
         int rows_;
         std::shared_ptr<T[]> mat_ptr_;
     public:
+        // Initial matrix with specific rows and columns.
         Matrix(int rows, int cols) : rows_(rows), cols_(cols), mat_ptr_(new T[rows * cols]) {}
 
-        explicit Matrix(const cv::Mat_<T> &mat) : Matrix(mat.rows, mat.cols) {
+        explicit Matrix(const cv::Mat_ <T> &mat) : Matrix(mat.rows, mat.cols) {
             for (int row = 0; row < rows_; ++row) {
                 for (int col = 0; col < cols_; ++col) {
                     mat_ptr_[row * cols_ + col] = mat(row, col);
@@ -74,7 +75,7 @@ namespace matrix {
         }
 
         explicit operator cv::Mat_<T>() const {
-            cv::Mat_<T> mat(rows_, cols_);
+            cv::Mat_ <T> mat(rows_, cols_);
             for (int row = 0; row < rows_; ++row) {
                 for (int col = 0; col < cols_; ++col) {
                     mat(row, col) = mat_ptr_[row * cols_ + col];
@@ -82,8 +83,13 @@ namespace matrix {
             }
             return mat;
         }
-    };
 
+        Matrix<T>& operator+(Matrix<T>&, Matrix<T>&);
+
+        friend Matrix<T>& operator-(Matrix<T>&, Matrix<T>&);
+
+        Matrix<T>& operator-(Matrix<T> &);
+    };
 }
 
 #endif //CS205_PROJECT_MATRIX_H

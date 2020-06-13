@@ -17,12 +17,17 @@ int main() {
         }
     }
 
-    for (int i = 0; i < mat.getRow(); ++i) {
-        for (int j = 0; j < mat.getCol(); ++j) {
+    for (int i = 0; i < mat.getRows(); ++i) {
+        for (int j = 0; j < mat.getCols(); ++j) {
             std::cout << mat[i][j] << " ";
         }
         std::cout << std::endl;
     }
+
+    auto *p = new Matrix<int>(2, 3);
+    Vector<int> v = (*p)[1];
+    delete p;
+    std::cout << v[2] << std::endl;
 
     return 0;
 }

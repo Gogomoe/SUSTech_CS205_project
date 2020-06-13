@@ -1,62 +1,67 @@
 #ifndef CS205_PROJECT_MATRIX_H
 #define CS205_PROJECT_MATRIX_H
 
+#include <memory>
+
 namespace matrix {
 
-    void check_bound(int it, int lower, int upper);
+    void checkBound(int it, int lower, int upper);
 
     template<typename T>
-    class Row {
+    class Vector {
     private:
         int row_;
-        int col_;
-        T *mat_ptr_;
+        int cols_;
+        std::weak_ptr<T[]> mat_ptr_;
     public:
-        Row(int row, int col, T *rowPtr) : row_(row), col_(col), mat_ptr_(rowPtr) {}
+        Vector(int row, int cols, std::weak_ptr<T[]> mat_ptr) : row_(row), cols_(cols), mat_ptr_(mat_ptr) {}
 
         T &operator[](int col) {
-            check_bound(col, 0, col_);
-            return mat_ptr_[row_ * col_ + col];
+            checkBound(col, 0, cols_);
+            if (mat_ptr_.expired()) {
+                throw std::bad_weak_ptr();
+            }
+            return mat_ptr_.lock()[row_ * cols_ + col];
         }
     };
 
     template<typename T>
     class Matrix {
     private:
-        int col_;
-        int row_;
-        T *mat_ptr_;
+        int cols_;
+        int rows_;
+        std::shared_ptr<T[]> mat_ptr_;
     public:
-        Matrix(int row, int col) : row_(row), col_(col), mat_ptr_(new T[row * col]) {}
+        Matrix(int rows, int cols) : rows_(rows), cols_(cols), mat_ptr_(new T[rows * cols]) {}
 
         ~Matrix() {
-            delete[] mat_ptr_;
+            mat_ptr_.reset();
         }
 
-        int getCol() const {
-            return col_;
+        [[nodiscard]] int getCols() const {
+            return cols_;
         }
 
-        int getRow() const {
-            return row_;
+        [[nodiscard]] int getRows() const {
+            return rows_;
         }
 
         Matrix<T> &set(int row, int col, T val) {
-            check_bound(row, 0, row_);
-            check_bound(col, 0, col_);
-            mat_ptr_[row * col_ + col] = val;
+            checkBound(row, 0, rows_);
+            checkBound(col, 0, cols_);
+            mat_ptr_[row * cols_ + col] = val;
             return this;
         }
 
         T &get(int row, int col) {
-            check_bound(row, 0, row_);
-            check_bound(col, 0, col_);
-            return mat_ptr_[row * col_ + col];
+            checkBound(row, 0, rows_);
+            checkBound(col, 0, cols_);
+            return mat_ptr_[row * cols_ + col];
         }
 
-        Row<T> operator[](int row) {
-            check_bound(row, 0, row_);
-            return Row<T>(row, col_, mat_ptr_);
+        Vector<T> operator[](int row) {
+            checkBound(row, 0, rows_);
+            return Vector<T>(row, cols_, mat_ptr_);
         }
     };
 

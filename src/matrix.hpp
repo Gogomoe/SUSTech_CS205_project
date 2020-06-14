@@ -69,6 +69,20 @@ namespace matrix {
             return mat_ptr_[row * cols_ + col];
         }
 
+        const T &get(int row, int col) const {
+            checkBound(row, 0, rows_);
+            checkBound(col, 0, cols_);
+            return mat_ptr_[row * cols_ + col];
+        }
+
+        inline T &unsafe(int row, int col) {
+            return mat_ptr_[row * cols_ + col];
+        }
+
+        inline const T &unsafe(int row, int col) const {
+            return mat_ptr_[row * cols_ + col];
+        }
+
         Vector<T> operator[](int row) {
             checkBound(row, 0, rows_);
             return Vector<T>(row, cols_, mat_ptr_);
@@ -84,30 +98,71 @@ namespace matrix {
             return mat;
         }
 
-        template<class E>
-        friend Matrix<E> &operator+(Matrix<E> const &, Matrix<E> const &); // addition
+        // add
+        friend Matrix<T> operator+(const Matrix<T> &first, const Matrix<T> &second) {
+            if (first.getCols() != second.getCols() || first.getRows() != second.getRows()) {
+                throw std::length_error("The matrices don't have the same size!");
+            }
 
-        template<class E>
-        friend Matrix<E> &operator-(Matrix<E> const &, Matrix<E> const &); // minus
+            int rows = first.getRows();
+            int cols = first.getCols();
+            matrix::Matrix<T> result(rows, cols);
 
-        Matrix<T> &operator-(Matrix<T> &); // unary minus
+            for (int i = 0; i < rows; ++i) {
+                for (int j = 0; j < cols; ++j) {
+                    result.unsafe(i, j) = first.unsafe(i, j) + second.unsafe(i, j);
+                }
+            }
+            return result;
+        }
 
-        template<class E>
-        friend Matrix<E> &operator*(E const &, Matrix<E> const &); // scalar multiplication
+        // minus
+        friend Matrix<T> operator-(const Matrix<T> &first, const Matrix<T> &second) {
+            if (first.getCols() != second.getCols() || first.getRows() != second.getRows()) {
+                throw std::length_error("The matrices don't have the same size!");
+            }
 
-        template<class E>
-        friend Matrix<E> &operator*(Matrix<E> const &, E const &); // scalar multiplication
+            int rows = first.getRows();
+            int cols = first.getCols();
+            matrix::Matrix<T> result(rows, cols);
 
-        template<class E>
-        friend Matrix<E> &operator/(Matrix<E> const &, E const &); // scalar division
+            for (int i = 0; i < rows; ++i) {
+                for (int j = 0; j < cols; ++j) {
+                    result.unsafe(i, j) = first.unsafe(i, j) - second.unsafe(i, j);
+                }
+            }
+            return result;
+        }
 
-        Matrix<T>& transposition();
+        // unary minus
+        Matrix<T> operator-() const {
+            matrix::Matrix<T> result(rows_, cols_);
+            for (int i = 0; i < rows_; ++i) {
+                for (int j = 0; j < cols_; ++j) {
+                    result.unsafe(i, j) = -unsafe(i, j);
+                }
+            }
+            return result;
+        }
 
-        Matrix<T>& conjugation();
+        // scalar multiplication
+        friend Matrix<T> operator*(const T &, const Matrix<T> &);
 
-        Matrix<T>& ewMul(Matrix<T> &other); // element-wise multiplication.
+        // scalar multiplication
+        friend Matrix<T> operator*(const Matrix<T> &, const T &);
 
-        Matrix<T>& mmMul(Matrix<T> &other); // matrix-matrix multiplication.
+        // scalar division
+        friend Matrix<T> operator/(const Matrix<T> &, const T &);
+
+        Matrix<T> transposition() const;
+
+        Matrix<T> conjugation() const;
+
+        // element-wise multiplication.
+        Matrix<T> ewMul(const Matrix<T> &other) const;
+
+        // matrix-matrix multiplication.
+        Matrix<T> mmMul(const Matrix<T> &other) const;
     };
 }
 

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <stdexcept>
 #include <opencv2/highgui/highgui.hpp>
 #include "../include/httplib.h"
 #include "../include/json.hpp"
@@ -13,7 +14,13 @@ using namespace nlohmann;
 using namespace matrix;
 
 template<typename T>
-void handlePlus(json json, Response &response);
+void handlePlus(json &json, Response &response);
+
+template<typename T>
+void handleMinus(json &json, Response &response);
+
+template<typename T>
+void handleNegative(json &json, Response &resp);
 
 template<typename T>
 Matrix<T> fromJson(json json);
@@ -23,8 +30,8 @@ json toJson(const Matrix<T> &mat);
 
 Matrix<Vec3b> fromFormData(const MultipartFormData &data);
 
-int main() {
 
+int main() {
 
     Server svr;
 
@@ -40,6 +47,8 @@ int main() {
             handlePlus<double>(body, resp);
         } else if (body["type"] == "string") {
             handlePlus<string>(body, resp);
+        } else {
+            throw std::runtime_error("unsupported plus type");
         }
     });
 
@@ -51,6 +60,34 @@ int main() {
         std::vector<uchar> buf;
         cv::imencode(".jpg", mat, buf);
         resp.set_content(string(buf.begin(), buf.end()), "image/jpeg");
+    });
+
+    svr.Post("/api/minus", [](const Request &req, Response &resp) {
+        auto body = json::parse(req.body);
+        if (body["type"] == "number") {
+            handleMinus<double>(body, resp);
+        } else {
+            throw std::runtime_error("unsupported plus type");
+        }
+    });
+
+    svr.Post("/api/image/minus", [](const Request &req, Response &resp) {
+        Matrix<Vec3b> img1 = fromFormData(req.get_file_value("img1"));
+        Matrix<Vec3b> img2 = fromFormData(req.get_file_value("img2"));
+        Matrix<Vec3b> img3 = img1 - img2;
+        cv::Mat_<Vec3b> mat = (cv::Mat_<Vec3b>) img3;
+        std::vector<uchar> buf;
+        cv::imencode(".jpg", mat, buf);
+        resp.set_content(string(buf.begin(), buf.end()), "image/jpeg");
+    });
+
+    svr.Post("/api/negative", [](const Request &req, Response &resp) {
+        auto body = json::parse(req.body);
+        if (body["type"] == "number") {
+            handleNegative<double>(body, resp);
+        } else {
+            throw std::runtime_error("unsupported plus type");
+        }
     });
 
     svr.Get("/stop", [&](const Request &req, Response &resp) {
@@ -74,13 +111,26 @@ Matrix<Vec3b> fromFormData(const MultipartFormData &data) {
 }
 
 template<typename T>
-void handlePlus(json json, Response &resp) {
+void handlePlus(json &json, Response &resp) {
     Matrix<T> mat1 = fromJson<T>(json["mat1"]);
     Matrix<T> mat2 = fromJson<T>(json["mat2"]);
     Matrix<T> sum = mat1 + mat2;
     resp.set_content(toJson(sum).dump(), "application/json");
 }
 
+template<typename T>
+void handleMinus(json &json, Response &resp) {
+    Matrix<T> mat1 = fromJson<T>(json["mat1"]);
+    Matrix<T> mat2 = fromJson<T>(json["mat2"]);
+    Matrix<T> diff = mat1 - mat2;
+    resp.set_content(toJson(diff).dump(), "application/json");
+}
+
+template<typename T>
+void handleNegative(json &json, Response &resp) {
+    Matrix<T> mat1 = fromJson<T>(json["mat1"]);
+    resp.set_content(toJson(-mat1).dump(), "application/json");
+}
 
 template<typename T>
 Matrix<T> fromJson(json json) {

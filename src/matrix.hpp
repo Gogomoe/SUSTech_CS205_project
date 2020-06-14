@@ -36,6 +36,16 @@ namespace matrix {
         // Initial matrix with specific rows and columns.
         Matrix(int rows, int cols) : rows_(rows), cols_(cols), mat_ptr_(new T[rows * cols]()) {}
 
+        Matrix(const Matrix<T> &mat) : Matrix(mat.rows_, mat.cols_) {
+            for (int i = 0; i < rows_; ++i) {
+                for (int j = 0; j < cols_; ++j) {
+                    unsafe(i, j) = mat.unsafe(i, j);
+                }
+            }
+        }
+
+        Matrix(Matrix<T> &&mat) noexcept: rows_(mat.rows_), cols_(mat.cols_), mat_ptr_(mat.mat_ptr_) {}
+
         explicit Matrix(const cv::Mat_<T> &mat) : Matrix(mat.rows, mat.cols) {
             for (int row = 0; row < rows_; ++row) {
                 for (int col = 0; col < cols_; ++col) {
@@ -86,6 +96,46 @@ namespace matrix {
         Vector<T> operator[](int row) {
             checkBound(row, 0, rows_);
             return Vector<T>(row, cols_, mat_ptr_);
+        }
+
+        Matrix<T> &operator=(const Matrix<T> &other) {
+            if (this == other) {
+                return *this;
+            }
+            rows_ = other.rows_;
+            cols_ = other.cols_;
+            mat_ptr_.reset(new T[rows_ * cols_]());
+            for (int i = 0; i < rows_; ++i) {
+                for (int j = 0; j < cols_; ++j) {
+                    unsafe(i, j) = other.unsafe(i, j);
+                }
+            }
+            return *this;
+        }
+
+        Matrix<T> &operator=(Matrix<T> &&other) noexcept {
+            rows_ = other.rows_;
+            cols_ = other.cols_;
+            mat_ptr_ = other.mat_ptr_;
+            return *this;
+        }
+
+        bool operator==(const Matrix<T> &other) const {
+            if (rows_ != other.rows_ || cols_ != other.cols_) {
+                return false;
+            }
+            for (int i = 0; i < rows_; ++i) {
+                for (int j = 0; j < cols_; ++j) {
+                    if (unsafe(i, j) != other.unsafe(i, j)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        bool operator!=(const Matrix &rhs) const {
+            return !(rhs == *this);
         }
 
         explicit operator cv::Mat_<T>() const {

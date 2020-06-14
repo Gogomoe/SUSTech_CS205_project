@@ -15,11 +15,14 @@ void testOpencvMat();
 
 void testAdd();
 
+void testEqual();
+
 int main() {
     testMatrix();
     testVector();
     testOpencvMat();
     testAdd();
+    testEqual();
     return 0;
 }
 
@@ -95,4 +98,28 @@ void testAdd() {
         }
         cout << endl;
     }
+
+    Matrix<int> diff = mat1 - mat2;
+
+    for (int i = 0; i < diff.getRows(); ++i) {
+        for (int j = 0; j < diff.getCols(); ++j) {
+            cout << diff[i][j] << " ";
+        }
+        cout << endl;
+    }
+}
+
+
+void testEqual() {
+    Matrix<int> mat1(2, 3);
+    Matrix<int> mat2(2, 3);
+    mat1[0][0] = 0;
+    mat1[0][1] = 1;
+    mat1[0][2] = 2;
+
+    mat2[0][0] = 0;
+    mat2[0][1] = 1;
+    mat2[0][2] = 2;
+
+    cout << (mat1 == mat2) << endl;
 }

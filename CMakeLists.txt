@@ -20,3 +20,4 @@ SET(CMAKE_CXX_FLAGS -pthread)
 
 aux_source_directory(webserver/src WEB_SRC)
 add_executable(web_server ${WEB_SRC} src/matrix.cpp)
+target_link_libraries(web_server PRIVATE ${OpenCV_LIBS})

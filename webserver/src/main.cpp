@@ -1,9 +1,12 @@
 #include <iostream>
+#include <vector>
+#include <opencv2/highgui/highgui.hpp>
 #include "../include/httplib.h"
 #include "../include/json.hpp"
 #include "../../src/matrix.hpp"
 
 using string = std::string;
+using Vec3b = cv::Vec3b;
 
 using namespace httplib;
 using namespace nlohmann;
@@ -17,6 +20,8 @@ Matrix<T> fromJson(json json);
 
 template<typename T>
 json toJson(const Matrix<T> &mat);
+
+Matrix<Vec3b> fromFormData(const MultipartFormData &data);
 
 int main() {
 
@@ -38,6 +43,16 @@ int main() {
         }
     });
 
+    svr.Post("/api/image/plus", [](const Request &req, Response &resp) {
+        Matrix<Vec3b> img1 = fromFormData(req.get_file_value("img1"));
+        Matrix<Vec3b> img2 = fromFormData(req.get_file_value("img2"));
+        Matrix<Vec3b> img3 = img1 + img2;
+        cv::Mat_<Vec3b> mat = (cv::Mat_<Vec3b>) img3;
+        std::vector<uchar> buf;
+        cv::imencode(".jpg", mat, buf);
+        resp.set_content(string(buf.begin(), buf.end()), "image/jpeg");
+    });
+
     svr.Get("/stop", [&](const Request &req, Response &resp) {
         resp.set_content("stop", "text/plain");
         std::cout << "stop" << std::endl;
@@ -48,6 +63,14 @@ int main() {
     svr.listen("localhost", 8080);
 
     return 0;
+}
+
+Matrix<Vec3b> fromFormData(const MultipartFormData &data) {
+    int len = data.content.length();
+    const char *buf = data.content.c_str();
+    std::vector<char> vec(buf, buf + len);
+    cv::Mat_<Vec3b> mat = cv::imdecode(vec, 1);
+    return Matrix<Vec3b>(mat);
 }
 
 template<typename T>

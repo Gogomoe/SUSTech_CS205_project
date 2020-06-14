@@ -1,0 +1,54 @@
+GET http://localhost:8080/stop
+
+###
+
+POST http://localhost:8080/api/plus
+Content-Type: application/json
+
+{
+  "type": "number",
+  "mat1": {
+    "rows": 2,
+    "cols": 3,
+    "data": [
+      [1, 2, 3],
+      [4, 5, 6]
+    ]
+  },
+  "mat2": {
+    "rows": 2,
+    "cols": 3,
+    "data": [
+      [3, 2, 1],
+      [4, 5, 6]
+    ]
+  }
+}
+
+###
+
+POST http://localhost:8080/api/plus
+Content-Type: application/json
+
+{
+  "type": "string",
+  "mat1": {
+    "rows": 2,
+    "cols": 3,
+    "data": [
+      ["a", "b", "c"],
+      ["d", "e", "f"]
+    ]
+  },
+  "mat2": {
+    "rows": 2,
+    "cols": 3,
+    "data": [
+      ["1", "2", "3"],
+      ["4", "5", "6"]
+    ]
+  }
+}
+
+###
+

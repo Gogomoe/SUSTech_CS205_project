@@ -14,3 +14,9 @@ include_directories(
 
 add_executable(CS205_project ${DIR_SRC} ${DIR_TEST})
 target_link_libraries(CS205_project PRIVATE ${OpenCV_LIBS})
+
+include_directories(webserver/include)
+SET(CMAKE_CXX_FLAGS -pthread)
+
+aux_source_directory(webserver/src WEB_SRC)
+add_executable(web_server ${WEB_SRC} src/matrix.cpp)

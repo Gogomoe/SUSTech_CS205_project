@@ -34,7 +34,7 @@ namespace matrix {
         std::shared_ptr<T[]> mat_ptr_;
     public:
         // Initial matrix with specific rows and columns.
-        Matrix(int rows, int cols) : rows_(rows), cols_(cols), mat_ptr_(new T[rows * cols]) {}
+        Matrix(int rows, int cols) : rows_(rows), cols_(cols), mat_ptr_(new T[rows * cols]()) {}
 
         explicit Matrix(const cv::Mat_<T> &mat) : Matrix(mat.rows, mat.cols) {
             for (int row = 0; row < rows_; ++row) {

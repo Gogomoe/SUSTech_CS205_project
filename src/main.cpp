@@ -13,10 +13,13 @@ void testVector();
 
 void testOpencvMat();
 
+void testAdd();
+
 int main() {
     testMatrix();
     testVector();
     testOpencvMat();
+    testAdd();
     return 0;
 }
 
@@ -71,4 +74,25 @@ void testOpencvMat() {
     }
 
     cout.flags(default_flags);
+}
+
+void testAdd() {
+    Matrix<int> mat1(2, 3);
+    Matrix<int> mat2(2, 3);
+    mat1[0][0] = 0;
+    mat1[0][1] = 1;
+    mat1[0][2] = 2;
+
+    mat2[1][0] = 3;
+    mat2[1][1] = 4;
+    mat2[1][2] = 5;
+
+    Matrix<int> sum = mat1 + mat2;
+
+    for (int i = 0; i < sum.getRows(); ++i) {
+        for (int j = 0; j < sum.getCols(); ++j) {
+            cout << sum[i][j] << " ";
+        }
+        cout << endl;
+    }
 }

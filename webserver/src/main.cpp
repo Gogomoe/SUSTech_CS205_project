@@ -35,7 +35,7 @@ int main() {
 
     Server svr;
 
-    svr.set_mount_point("/", "webserver/static");
+    svr.set_mount_point("/", "webserver/dist");
 
     svr.Get("/", [](const Request &req, Response &resp) {
         resp.set_content("Hello World!", "text/plain");

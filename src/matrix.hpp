@@ -124,14 +124,19 @@ namespace matrix {
             if (rows_ != other.rows_ || cols_ != other.cols_) {
                 return false;
             }
+
+            bool ret = true;
+            #pragma omp parallel for collapse(2)
             for (int i = 0; i < rows_; ++i) {
                 for (int j = 0; j < cols_; ++j) {
+                    if(!ret) continue;
                     if (unsafe(i, j) != other.unsafe(i, j)) {
-                        return false;
+                        ret = false;
+                        // return false;
                     }
                 }
             }
-            return true;
+            return ret;
         }
 
         bool operator!=(const Matrix &rhs) const {
@@ -140,6 +145,7 @@ namespace matrix {
 
         explicit operator cv::Mat_<T>() const {
             cv::Mat_<T> mat(rows_, cols_);
+            #pragma omp parallel for collapse(2)
             for (int row = 0; row < rows_; ++row) {
                 for (int col = 0; col < cols_; ++col) {
                     mat(row, col) = mat_ptr_[row * cols_ + col];
@@ -148,16 +154,27 @@ namespace matrix {
             return mat;
         }
 
-        // add
-        friend Matrix<T> operator+(const Matrix<T> &first, const Matrix<T> &second) {
+        static void assertMatricesWithSameShape(const Matrix<T> &first, const Matrix<T> &second) {
             if (first.getCols() != second.getCols() || first.getRows() != second.getRows()) {
+                throw std::length_error("The matrices don't have the same shape!");
+            }
+        }
+
+        static void assertMatricesWithSameSize(const Matrix<T> &first, const Matrix<T> &second) {
+            if (first.getCols()*first.getRows() != second.getCols()*second.getRows()) {
                 throw std::length_error("The matrices don't have the same size!");
             }
+        }
+
+        // add
+        friend Matrix<T> operator+(const Matrix<T> &first, const Matrix<T> &second) {
+            Matrix<T>::assertMatricesWithSameShape(first, second);
 
             int rows = first.getRows();
             int cols = first.getCols();
             matrix::Matrix<T> result(rows, cols);
 
+            #pragma omp parallel for collapse(2)
             for (int i = 0; i < rows; ++i) {
                 for (int j = 0; j < cols; ++j) {
                     result.unsafe(i, j) = first.unsafe(i, j) + second.unsafe(i, j);
@@ -168,14 +185,13 @@ namespace matrix {
 
         // minus
         friend Matrix<T> operator-(const Matrix<T> &first, const Matrix<T> &second) {
-            if (first.getCols() != second.getCols() || first.getRows() != second.getRows()) {
-                throw std::length_error("The matrices don't have the same size!");
-            }
+            Matrix<T>::assertMatricesWithSameShape(first, second);
 
             int rows = first.getRows();
             int cols = first.getCols();
             matrix::Matrix<T> result(rows, cols);
 
+            #pragma omp parallel for collapse(2)
             for (int i = 0; i < rows; ++i) {
                 for (int j = 0; j < cols; ++j) {
                     result.unsafe(i, j) = first.unsafe(i, j) - second.unsafe(i, j);
@@ -187,6 +203,7 @@ namespace matrix {
         // unary minus
         Matrix<T> operator-() const {
             matrix::Matrix<T> result(rows_, cols_);
+            #pragma omp parallel for collapse(2)
             for (int i = 0; i < rows_; ++i) {
                 for (int j = 0; j < cols_; ++j) {
                     result.unsafe(i, j) = -unsafe(i, j);
@@ -196,23 +213,96 @@ namespace matrix {
         }
 
         // scalar multiplication
-        friend Matrix<T> operator*(const T &, const Matrix<T> &);
+        friend Matrix<T> operator*(const T &val, const Matrix<T> &mat) {
+            int rows = mat.getRows();
+            int cols = mat.getCols();
+            matrix::Matrix<T> result(rows, cols);
+
+            #pragma omp parallel for collapse(2)
+            for (int i = 0; i < rows; ++i) {
+                for (int j = 0; j < cols; ++j) {
+                    result.unsafe(i, j) = mat.unsafe(i, j) * val;
+                }
+            }
+            return result;
+        }
 
         // scalar multiplication
-        friend Matrix<T> operator*(const Matrix<T> &, const T &);
+        friend Matrix<T> operator*(const Matrix<T> &mat, const T &val) {
+            int rows = mat.getRows();
+            int cols = mat.getCols();
+            matrix::Matrix<T> result(rows, cols);
+
+            #pragma omp parallel for collapse(2)
+            for (int i = 0; i < rows; ++i) {
+                for (int j = 0; j < cols; ++j) {
+                    result.unsafe(i, j) = mat.unsafe(i, j) * val;
+                }
+            }
+            return result;
+        }
 
         // scalar division
-        friend Matrix<T> operator/(const Matrix<T> &, const T &);
+        friend Matrix<T> operator/(const Matrix<T> &mat, const T &val) {
+            int rows = mat.getRows();
+            int cols = mat.getCols();
+            matrix::Matrix<T> result(rows, cols);
 
-        Matrix<T> transposition() const;
+            #pragma omp parallel for collapse(2)
+            for (int i = 0; i < rows; ++i) {
+                for (int j = 0; j < cols; ++j) {
+                    result.unsafe(i, j) = mat.unsafe(i, j) / val;
+                }
+            }
+            return result;
+        }
 
-        Matrix<T> conjugation() const;
+        Matrix<T> transposition() const {
+
+        }
+
+        Matrix<T> conjugation() const {
+            
+        }
 
         // element-wise multiplication.
-        Matrix<T> ewMul(const Matrix<T> &other) const;
+        Matrix<T> multiply(const Matrix<T> &other) const {
+            Matrix<T>::assertMatricesWithSameShape(this, other);
+
+            int rows = getRows();
+            int cols = getCols();
+            matrix::Matrix<T> result(rows, cols);
+
+            #pragma omp parallel for collapse(2)
+            for (int i = 0; i < rows; ++i) {
+                for (int j = 0; j < cols; ++j) {
+                    result.unsafe(i, j) = unsafe(i, j) - other.unsafe(i, j);
+                }
+            }
+            return result;
+        }
 
         // matrix-matrix multiplication.
-        Matrix<T> mmMul(const Matrix<T> &other) const;
+        Matrix<T> matmul(const Matrix<T> &other) const {
+            if (getCols() != other.getRows()) {
+                throw std::length_error("Matrices with incompatible shapes cannot perform matmul!");
+            }
+
+            int rows = getRows();
+            int cols = other.getCols();
+
+            matrix::Matrix<T> result(rows, cols);
+  
+            #pragma omp parallel for collapse(3)
+            for (int i = 0; i < rows; ++i) { // reorder for loops to avoid stride memory access
+                for (int j = 0; j < getCols(); ++j) {
+                    for (int k = 0; k < cols; ++k) {
+                        result.unsafe(i, k) += unsafe(i, j) * other.unsafe(j, k);
+                    }
+                }
+            }
+            return result;
+        }
     };
 }
 

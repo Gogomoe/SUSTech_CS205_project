@@ -17,12 +17,15 @@ void testAdd();
 
 void testEqual();
 
+void testDenseCompute();
+
 int main() {
     testMatrix();
     testVector();
     testOpencvMat();
     testAdd();
     testEqual();
+    testDenseCompute();
     return 0;
 }
 
@@ -122,4 +125,12 @@ void testEqual() {
     mat2[0][2] = 2;
 
     cout << (mat1 == mat2) << endl;
+}
+
+void testDenseCompute() {
+    Matrix<float> mat1(5000, 5000);
+    Matrix<float> mat2(5000, 5000);
+    for (int i = 0; i < 100; ++i) {
+        mat1.matmul(mat2);
+    }
 }

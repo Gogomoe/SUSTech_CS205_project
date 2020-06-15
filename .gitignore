@@ -72,3 +72,9 @@ fabric.properties
 
 # All other files in .idea
 .idea
+
+# VSCode configuration
+.vscode
+
+# Build directory
+build

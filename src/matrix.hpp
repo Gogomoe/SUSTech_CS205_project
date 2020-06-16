@@ -292,7 +292,7 @@ namespace matrix {
             int cols = other.getCols();
 
             matrix::Matrix<T> result(rows, cols);
-  
+
             #pragma omp parallel for collapse(3)
             for (int i = 0; i < rows; ++i) { // reorder for loops to avoid stride memory access
                 for (int j = 0; j < getCols(); ++j) {

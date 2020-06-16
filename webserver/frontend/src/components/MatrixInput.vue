@@ -23,10 +23,45 @@
                 </div>
             </template>
         </div>
+        <div>
+            <a-row :gutter="24">
+                <a-col :span="4">
+                    <a-button v-on:click="negative" style="width: 100%">negative</a-button>
+                </a-col>
+            </a-row>
+        </div>
     </div>
 </template>
 
 <script>
+
+    function unaryOperate(api) {
+        return async function () {
+            let matrix = this.readMatrix();
+            let isNumber = matrix.type === "number";
+
+            if (isNumber) {
+                matrix.matrix.data = matrix.matrix.data.map(row => row.map(it => parseFloat(it)));
+            }
+
+            let data = {
+                type: isNumber ? "number" : "string",
+                mat1: matrix.matrix
+            };
+
+            let resp = await fetch(api, {
+                method: "post",
+                body: JSON.stringify(data)
+            });
+            if (!resp.ok) {
+                this.$message.error('Error: operation failed');
+                return;
+            }
+            let json = await resp.json();
+            this.$emit('update:result', json.data);
+        }
+    }
+
     export default {
         name: "MatrixInput",
         data: function () {
@@ -41,6 +76,7 @@
             }
         },
         methods: {
+            negative: unaryOperate("/api/negative"),
             onMatrixSize() {
                 let {rows, cols, matrix} = this;
                 while (matrix.length < rows) {
@@ -51,6 +87,32 @@
                         row.push("")
                     }
                 }
+            },
+            readMatrix: function () {
+                let rows = this.rows;
+                let cols = this.cols;
+                let isNumber = true;
+
+                let result = [];
+                for (let i = 0; i < rows; i++) {
+                    result.push([]);
+                    for (let j = 0; j < cols; j++) {
+                        let cell = this.matrix[i][j].trim();
+                        if (isNaN(cell)) {
+                            isNumber = false;
+                        }
+                        result[i].push(this.matrix[i][j]);
+                    }
+                }
+
+                return {
+                    type: isNumber ? "number" : "string",
+                    matrix: {
+                        rows: rows,
+                        cols: cols,
+                        data: result
+                    }
+                };
             }
         },
     }

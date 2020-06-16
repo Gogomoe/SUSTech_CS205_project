@@ -77,6 +77,57 @@ Content-Type: application/json
 
 ###
 
+POST http://localhost:8080/api/cross_times
+Content-Type: application/json
+
+{
+  "type": "number",
+  "mat1": {
+    "rows": 2,
+    "cols": 3,
+    "data": [
+      [1, 2, 3],
+      [4, 5, 6]
+    ]
+  },
+  "mat2": {
+    "rows": 3,
+    "cols": 2,
+    "data": [
+      [3, 2],
+      [4, 5],
+      [7, 8]
+    ]
+  }
+}
+
+###
+
+POST http://localhost:8080/api/inner_times
+Content-Type: application/json
+
+{
+  "type": "number",
+  "mat1": {
+    "rows": 2,
+    "cols": 3,
+    "data": [
+      [1, 2, 3],
+      [4, 5, 6]
+    ]
+  },
+  "mat2": {
+    "rows": 2,
+    "cols": 3,
+    "data": [
+      [3, 2, 1],
+      [4, 5, 6]
+    ]
+  }
+}
+
+###
+
 POST http://localhost:8080/api/negative
 Content-Type: application/json
 

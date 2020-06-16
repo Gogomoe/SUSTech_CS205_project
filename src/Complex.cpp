@@ -3,33 +3,33 @@
 
 using namespace std;
 
-Complex::Complex() : real(0), imag(0) {}
+Complex::Complex() : imag(0), real(0) {}
 
-Complex::Complex(double re, double im) : real(re), imag(im) {}
+Complex::Complex(double re, double im) : imag(im), real(re) {}
 
-Complex Complex::operator~() {
+Complex Complex::operator~() const {
     return {-real, -imag};
 }
 
-Complex Complex::operator+(const Complex &other) {
+Complex Complex::operator+(const Complex &other) const {
     return {real + other.real, imag + other.imag};
 }
 
-Complex Complex::operator-(const Complex &other) {
+Complex Complex::operator-(const Complex &other) const {
     return {real - other.real, imag - other.imag};
 }
 
-Complex Complex::operator*(const Complex &other) {
+Complex Complex::operator*(const Complex &other) const {
     double real_ = real * other.real - imag * other.imag;
     double imag_ = real * other.imag + imag * other.real;
     return {real_, imag_};
 }
 
-bool Complex::operator==(const Complex &other) {
+bool Complex::operator==(const Complex &other) const {
     return real == other.real && imag == other.imag;
 }
 
-bool Complex::operator!=(const Complex &other) {
+bool Complex::operator!=(const Complex &other) const {
     return real != other.real || imag != other.imag;
 }
 
@@ -47,6 +47,6 @@ void operator>>(istream &is, Complex &other) {
     is >> other.imag;
 }
 
-Complex operator*(int scala, Complex &other) {
+Complex operator*(double scala, Complex &other) {
     return {scala * other.real, scala * other.imag};
 }

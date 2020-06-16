@@ -30,12 +30,12 @@ bool matrixConjugationTest() {
     m1.set(6, vals);
     m2 = m1.conjugation();
 
-    assert(m2.get(0, 0) == *(new Complex(1, 0)));
-    assert(m2.get(0, 1) == *(new Complex(4, 0)));
-    assert(m2.get(1, 0) == *(new Complex(2, -1)));
-    assert(m2.get(1, 1) == *(new Complex(5, -1)));
-    assert(m2.get(2, 0) == *(new Complex(3, 1)));
-    assert(m2.get(2, 1) == *(new Complex(6, 1)));
+    assert(m2.get(0, 0) == Complex(1, 0));
+    assert(m2.get(0, 1) == Complex(4, 0));
+    assert(m2.get(1, 0) == Complex(2, -1));
+    assert(m2.get(1, 1) == Complex(5, -1));
+    assert(m2.get(2, 0) == Complex(3, 1));
+    assert(m2.get(2, 1) == Complex(6, 1));
 
     return true;
 }

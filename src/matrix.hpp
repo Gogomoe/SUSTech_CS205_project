@@ -2,6 +2,7 @@
 #define CS205_PROJECT_MATRIX_HPP
 
 #include <memory>
+#include <complex>
 #include <opencv2/core/mat.hpp>
 
 #include "Complex.hpp"
@@ -74,7 +75,7 @@ namespace matrix {
             checkBound(row, 0, rows_);
             checkBound(col, 0, cols_);
             mat_ptr_[row * cols_ + col] = val;
-            return this;
+            return *this;
         }
 
         Matrix<T> &set(int length, T *vals) {
@@ -82,6 +83,7 @@ namespace matrix {
                 mat_ptr_[i] = *vals;
                 ++vals;
             }
+            return *this;
         }
 
         T &get(int row, int col) {
@@ -268,7 +270,7 @@ namespace matrix {
             return result;
         }
 
-        Matrix<T> transposition() {
+        Matrix<T> transposition() const {
             matrix::Matrix<T> result(cols_, rows_);
 
             #pragma omp parallel for collapse(2)
@@ -280,15 +282,14 @@ namespace matrix {
             return result;
         }
 
-        Matrix<T> conjugation() {
-            matrix::Matrix<T> result = transposition();
+        Matrix<Complex> conjugation() const {
+            matrix::Matrix<Complex> result = transposition();
 
             #pragma omp parallel for collapse(2)
             for (int i = 0; i < rows_; ++i) {
                 for (int j = 0; j < cols_; ++j) {
-                    auto content = result.unsafe(j, i);
-                    if (dynamic_cast<Complex*>(&content))
-                        result.unsafe(j, i) = *(new Complex(content.getReal(), -content.getImag()));
+                    const Complex &value = result.unsafe(j, i);
+                    result.unsafe(j, i) = Complex(value.getReal(), value.getImag());
                 }
             }
             return result;

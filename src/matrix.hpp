@@ -274,22 +274,24 @@ namespace matrix {
             #pragma omp parallel for collapse(2)
             for (int i = 0; i < rows_; ++i) {
                 for (int j = 0; j < cols_; ++j) {
-                    result.unsafe(j, i) = unsafe(i, j); // bug: value specify doesn't work as expected.
+                    result.unsafe(j, i) = unsafe(i, j);
                 }
             }
+            return result;
         }
 
-        Matrix<T> conjugation() const {
+        Matrix<T> conjugation() {
             matrix::Matrix<T> result = transposition();
 
             #pragma omp parallel for collapse(2)
             for (int i = 0; i < rows_; ++i) {
                 for (int j = 0; j < cols_; ++j) {
                     auto content = result.unsafe(j, i);
-                    if (dynamic_cast<Complex*>(content) != nullptr)
-                        result.set(j, i, new Complex(content.re, -content.im));
+                    if (dynamic_cast<Complex*>(&content))
+                        result.unsafe(j, i) = *(new Complex(content.getReal(), -content.getImag()));
                 }
             }
+            return result;
         }
 
         // element-wise multiplication.

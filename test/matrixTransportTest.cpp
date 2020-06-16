@@ -19,3 +19,23 @@ bool matrixTransportationTest() {
 
     return true;
 }
+
+bool matrixConjugationTest() {
+    matrix::Matrix<Complex> m1(2, 3);
+    matrix::Matrix<Complex> m2(3, 2);
+    Complex vals[6];
+    vals[0] = Complex(1, 0), vals[1] = Complex(2, 1), vals[2] = Complex(3, -1);
+    vals[3] = Complex(4, 0), vals[4] = Complex(5, 1), vals[5] = Complex(6, -1);
+
+    m1.set(6, vals);
+    m2 = m1.conjugation();
+
+    assert(m2.get(0, 0) == *(new Complex(1, 0)));
+    assert(m2.get(0, 1) == *(new Complex(4, 0)));
+    assert(m2.get(1, 0) == *(new Complex(2, -1)));
+    assert(m2.get(1, 1) == *(new Complex(5, -1)));
+    assert(m2.get(2, 0) == *(new Complex(3, 1)));
+    assert(m2.get(2, 1) == *(new Complex(6, 1)));
+
+    return true;
+}

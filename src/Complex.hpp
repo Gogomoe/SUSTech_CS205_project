@@ -19,6 +19,9 @@ public:
     friend void operator>>(std::istream &, Complex&);
     friend Complex operator*(int, Complex&);
 
+    double getImag() { return imag; }
+    double getReal() { return real; }
+
 private:
     double imag;
     double real;

@@ -43,6 +43,7 @@ int main() {
     testSlice();
     testDenseCompute();
     matrixTransportationTest();
+    matrixConjugationTest();
     return 0;
 }
 

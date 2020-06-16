@@ -29,8 +29,8 @@ namespace matrix {
     template<typename T>
     class Matrix {
     private:
-        int cols_;
         int rows_;
+        int cols_;
         std::shared_ptr<T[]> mat_ptr_;
     public:
         // Initial matrix with specific rows and columns.
@@ -267,7 +267,7 @@ namespace matrix {
 
         // element-wise multiplication.
         Matrix<T> multiply(const Matrix<T> &other) const {
-            Matrix<T>::assertMatricesWithSameShape(this, other);
+            Matrix<T>::assertMatricesWithSameShape(*this, other);
 
             int rows = getRows();
             int cols = getCols();
@@ -302,6 +302,22 @@ namespace matrix {
                 }
             }
             return result;
+        }
+
+        T sum() const {
+            int rows = getRows();
+            int cols = getCols();
+
+            T sumVal = T();
+            
+            #pragma omp parallel for reduction(+: sumVal) collapse(2)
+            for (int i = 0; i < rows; ++i) {
+                for (int j = 0; j < cols; ++j) {
+                    sumVal += unsafe(i, j);
+                }
+            }
+
+            return sumVal;
         }
     };
 }

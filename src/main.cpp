@@ -2,6 +2,7 @@
 #include <random>
 #include <opencv2/highgui/highgui.hpp>
 #include <iomanip>
+#include <chrono>
 #include "matrix.hpp"
 
 using namespace matrix;
@@ -128,9 +129,28 @@ void testEqual() {
 }
 
 void testDenseCompute() {
-    Matrix<float> mat1(5000, 5000);
-    Matrix<float> mat2(5000, 5000);
-    for (int i = 0; i < 100; ++i) {
-        mat1.matmul(mat2);
+    const int rows = 10000;
+    const int cols = 10000;
+
+    Matrix<double> mat1(rows, cols);
+    Matrix<double> mat2(rows, cols);
+
+    double sum;
+
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            mat1.unsafe(i, j) = i;
+            mat2.unsafe(i, j) = j;
+        }
     }
+
+    chrono::steady_clock::time_point begin = chrono::steady_clock::now();
+    for (int i = 0; i < 1; ++i) {
+        sum = (mat1+mat2).sum();
+    }
+    chrono::steady_clock::time_point end = chrono::steady_clock::now();
+
+    cout << "Result: " << sum << endl;
+    cout << "Elapsed time: " << chrono::duration_cast<chrono::milliseconds> (end - begin).count() << "ms" << endl;
 }

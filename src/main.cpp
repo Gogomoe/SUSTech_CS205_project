@@ -3,7 +3,9 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <iomanip>
 #include <chrono>
+
 #include "matrix.hpp"
+#include "../test/test.hpp"
 
 using namespace matrix;
 using namespace std;
@@ -40,6 +42,7 @@ int main() {
     testEqual();
     testSlice();
     testDenseCompute();
+    matrixTransportationTest();
     return 0;
 }
 

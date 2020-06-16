@@ -4,6 +4,8 @@
 #include <memory>
 #include <opencv2/core/mat.hpp>
 
+#include "Complex.hpp"
+
 namespace matrix {
 
     void checkBound(int it, int lower, int upper);
@@ -73,6 +75,13 @@ namespace matrix {
             checkBound(col, 0, cols_);
             mat_ptr_[row * cols_ + col] = val;
             return this;
+        }
+
+        Matrix<T> &set(int length, T *vals) {
+            for (int i = 0; i < length; ++i) {
+                mat_ptr_[i] = *vals;
+                ++vals;
+            }
         }
 
         T &get(int row, int col) {
@@ -259,12 +268,28 @@ namespace matrix {
             return result;
         }
 
-        Matrix<T> transposition() const {
+        Matrix<T> transposition() {
+            matrix::Matrix<T> result(cols_, rows_);
 
+            #pragma omp parallel for collapse(2)
+            for (int i = 0; i < rows_; ++i) {
+                for (int j = 0; j < cols_; ++j) {
+                    result.unsafe(j, i) = unsafe(i, j); // bug: value specify doesn't work as expected.
+                }
+            }
         }
 
         Matrix<T> conjugation() const {
+            matrix::Matrix<T> result = transposition();
 
+            #pragma omp parallel for collapse(2)
+            for (int i = 0; i < rows_; ++i) {
+                for (int j = 0; j < cols_; ++j) {
+                    auto content = result.unsafe(j, i);
+                    if (dynamic_cast<Complex*>(content) != nullptr)
+                        result.set(j, i, new Complex(content.re, -content.im));
+                }
+            }
         }
 
         // element-wise multiplication.

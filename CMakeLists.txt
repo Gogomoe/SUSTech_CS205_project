@@ -12,7 +12,7 @@ include_directories(
         ${OpenCV_INCLUDE_DIRS}
 )
 
-add_executable(matrix ${DIR_SRC} ${DIR_TEST})
+add_executable(matrix ${DIR_SRC} ${DIR_TEST} src/Complex.cpp test/matrixArithmeticTest.cpp test/matrixTransportTest.cpp test/test.hpp)
 target_link_libraries(matrix PRIVATE ${OpenCV_LIBS})
 
 if(${OPENMP})

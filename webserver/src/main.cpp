@@ -20,7 +20,19 @@ template<typename T>
 void handleMinus(json &json, Response &response);
 
 template<typename T>
+void handleCrossTimes(json json, Response &resp);
+
+template<typename T>
+void handleInnerTimes(json json, Response &resp);
+
+template<typename T>
 void handleNegative(json &json, Response &resp);
+
+template<typename T>
+void handleSum(json &json, Response &resp);
+
+template<typename T>
+void handleSlice(json &json, Response &resp);
 
 template<typename T>
 Matrix<T> fromJson(json json);
@@ -28,14 +40,10 @@ Matrix<T> fromJson(json json);
 template<typename T>
 json toJson(const Matrix<T> &mat);
 
-template<typename T>
-void handleCrossTimes(json json, Response &resp);
-
-template<typename T>
-void handleInnerTimes(json json, Response &resp);
-
 Matrix<Vec3b> fromFormData(const MultipartFormData &data);
 
+template<typename T>
+Matrix<T> toMatrix(const T &value);
 
 int main() {
 
@@ -73,7 +81,7 @@ int main() {
         if (body["type"] == "number") {
             handleMinus<double>(body, resp);
         } else {
-            throw std::runtime_error("unsupported plus type");
+            throw std::runtime_error("unsupported minus type");
         }
     });
 
@@ -92,7 +100,7 @@ int main() {
         if (body["type"] == "number") {
             handleCrossTimes<double>(body, resp);
         } else {
-            throw std::runtime_error("unsupported plus type");
+            throw std::runtime_error("unsupported cross_times type");
         }
     });
 
@@ -101,7 +109,7 @@ int main() {
         if (body["type"] == "number") {
             handleInnerTimes<double>(body, resp);
         } else {
-            throw std::runtime_error("unsupported plus type");
+            throw std::runtime_error("unsupported inner_times type");
         }
     });
 
@@ -110,7 +118,27 @@ int main() {
         if (body["type"] == "number") {
             handleNegative<double>(body, resp);
         } else {
-            throw std::runtime_error("unsupported plus type");
+            throw std::runtime_error("unsupported negative type");
+        }
+    });
+
+    svr.Post("/api/sum", [](const Request &req, Response &resp) {
+        auto body = json::parse(req.body);
+        if (body["type"] == "number") {
+            handleSum<double>(body, resp);
+        } else {
+            throw std::runtime_error("unsupported sum type");
+        }
+    });
+
+    svr.Post("/api/slice", [](const Request &req, Response &resp) {
+        auto body = json::parse(req.body);
+        if (body["type"] == "number") {
+            handleSlice<double>(body, resp);
+        } else if (body["type"] == "string") {
+            handleSlice<string>(body, resp);
+        } else {
+            throw std::runtime_error("unsupported sum type");
         }
     });
 
@@ -173,6 +201,20 @@ void handleNegative(json &json, Response &resp) {
 }
 
 template<typename T>
+void handleSum(json &json, Response &resp) {
+    Matrix<T> mat1 = fromJson<T>(json["mat1"]);
+    resp.set_content(toJson(toMatrix<T>(mat1.sum())).dump(), "application/json");
+}
+
+template<typename T>
+void handleSlice(json &json, Response &resp) {
+    Matrix<T> mat1 = fromJson<T>(json["mat1"]);
+    std::vector<int> row = json["row"];
+    std::vector<int> col = json["col"];
+    resp.set_content(toJson(mat1.slice(row, col)).dump(), "application/json");
+}
+
+template<typename T>
 Matrix<T> fromJson(json json) {
     int rows = json["rows"].get<int>();
     int cols = json["cols"].get<int>();
@@ -198,4 +240,11 @@ json toJson(const Matrix<T> &mat) {
         }
     }
     return json;
+}
+
+template<typename T>
+Matrix<T> toMatrix(const T &value) {
+    Matrix<T> result(1, 1);
+    result.unsafe(0, 0) = value;
+    return result;
 }

@@ -24,9 +24,32 @@
             </template>
         </div>
         <div>
-            <a-row :gutter="24">
+            <a-row :gutter="24" style="padding: 0.5em 0">
                 <a-col :span="4">
                     <a-button v-on:click="negative" style="width: 100%">negative</a-button>
+                </a-col>
+                <a-col :span="4">
+                    <a-button v-on:click="sum" style="width: 100%">sum</a-button>
+                </a-col>
+            </a-row>
+            <a-row :gutter="24" style="padding: 0.5em 0">
+                <a-col :span="2" style="line-height: 32px">
+                    <b>slice</b>
+                </a-col>
+                <a-col :span="2" style="line-height: 32px">
+                    row
+                </a-col>
+                <a-col :span="4" style="line-height: 32px">
+                    <a-input v-model="sliceRow" style="width: 100%"/>
+                </a-col>
+                <a-col :span="2" style="line-height: 32px">
+                    col
+                </a-col>
+                <a-col :span="4" style="line-height: 32px">
+                    <a-input v-model="sliceCol" style="width: 100%"/>
+                </a-col>
+                <a-col :span="4" style="line-height: 32px">
+                    <a-button v-on:click="slice" style="width: 100%">slice</a-button>
                 </a-col>
             </a-row>
         </div>
@@ -72,11 +95,52 @@
                     ["", "", ""],
                     ["", "", ""],
                     ["", "", ""]
-                ]
+                ],
+                sliceRow: "",
+                sliceCol: ""
             }
         },
         methods: {
             negative: unaryOperate("/api/negative"),
+            sum: unaryOperate("/api/sum"),
+            slice: async function () {
+                let matrix = this.readMatrix();
+                let isNumber = matrix.type === "number";
+
+                if (isNumber) {
+                    matrix.matrix.data = matrix.matrix.data.map(row => row.map(it => parseFloat(it)));
+                }
+
+                let row, col;
+                if (this.sliceRow.trim().length === 0) {
+                    row = Array.from(new Array(this.rows).keys());
+                } else {
+                    row = this.sliceRow.split(/\s+/).map(it => parseInt(it));
+                }
+                if (this.sliceCol.trim().length === 0) {
+                    col = Array.from(new Array(this.cols).keys());
+                } else {
+                    col = this.sliceCol.split(/\s+/).map(it => parseInt(it));
+                }
+
+                let data = {
+                    type: isNumber ? "number" : "string",
+                    mat1: matrix.matrix,
+                    row: row,
+                    col: col
+                };
+
+                let resp = await fetch("/api/slice", {
+                    method: "post",
+                    body: JSON.stringify(data)
+                });
+                if (!resp.ok) {
+                    this.$message.error('Error: operation failed');
+                    return;
+                }
+                let json = await resp.json();
+                this.$emit('update:result', json.data);
+            },
             onMatrixSize() {
                 let {rows, cols, matrix} = this;
                 while (matrix.length < rows) {

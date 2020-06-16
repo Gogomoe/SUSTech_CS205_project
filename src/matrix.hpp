@@ -8,6 +8,8 @@ namespace matrix {
 
     void checkBound(int it, int lower, int upper);
 
+    std::vector<int> makeSlice(int start, int end, int step, int upperBound);
+
     template<typename T>
     class Vector {
     private:
@@ -129,7 +131,7 @@ namespace matrix {
             #pragma omp parallel for collapse(2)
             for (int i = 0; i < rows_; ++i) {
                 for (int j = 0; j < cols_; ++j) {
-                    if(!ret) continue;
+                    if (!ret) continue;
                     if (unsafe(i, j) != other.unsafe(i, j)) {
                         ret = false;
                         // return false;
@@ -140,7 +142,7 @@ namespace matrix {
         }
 
         bool operator!=(const Matrix &rhs) const {
-            return !(rhs == *this);
+            return rhs != *this;
         }
 
         explicit operator cv::Mat_<T>() const {
@@ -161,7 +163,7 @@ namespace matrix {
         }
 
         static void assertMatricesWithSameSize(const Matrix<T> &first, const Matrix<T> &second) {
-            if (first.getCols()*first.getRows() != second.getCols()*second.getRows()) {
+            if (first.getCols() * first.getRows() != second.getCols() * second.getRows()) {
                 throw std::length_error("The matrices don't have the same size!");
             }
         }
@@ -262,7 +264,7 @@ namespace matrix {
         }
 
         Matrix<T> conjugation() const {
-            
+
         }
 
         // element-wise multiplication.
@@ -309,7 +311,7 @@ namespace matrix {
             int cols = getCols();
 
             T sumVal = T();
-            
+
             #pragma omp parallel for reduction(+: sumVal) collapse(2)
             for (int i = 0; i < rows; ++i) {
                 for (int j = 0; j < cols; ++j) {
@@ -318,6 +320,66 @@ namespace matrix {
             }
 
             return sumVal;
+        }
+
+        Matrix<T> sliceRow(int start = 0, int end = -1, int step = 1) {
+            return sliceRow(makeSlice(start, end, step, rows_));
+        }
+
+        Matrix<T> sliceRow(const std::vector<int> &rows) {
+            Matrix<T> result(rows.size(), cols_);
+            for (int i = 0; i < rows.size(); ++i) {
+                int row = rows[i];
+                checkBound(row, 0, rows_);
+                for (int j = 0; j < cols_; ++j) {
+                    result.unsafe(i, j) = unsafe(row, j);
+                }
+            }
+            return result;
+        }
+
+        Matrix<T> sliceCol(int start = 0, int end = -1, int step = 1) {
+            return sliceCol(makeSlice(start, end, step, cols_));
+        }
+
+        Matrix<T> sliceCol(const std::vector<int> &cols) {
+            Matrix<T> result(rows_, cols.size());
+            for (int i = 0; i < cols.size(); ++i) {
+                int col = cols[i];
+                checkBound(col, 0, cols_);
+                for (int j = 0; j < rows_; ++j) {
+                    result.unsafe(j, i) = unsafe(j, col);
+                }
+            }
+            return result;
+        }
+
+        Matrix<T> slice(
+                int rowStart = 0, int rowEnd = -1, int rowStep = 1,
+                int colStart = 0, int colEnd = -1, int colStep = 1
+        ) {
+            return slice(
+                    makeSlice(rowStart, rowEnd, rowStep, rows_),
+                    makeSlice(colStart, colEnd, colStep, cols_)
+            );
+        }
+
+        Matrix<T> slice(const std::vector<int> &rows, const std::vector<int> &cols) {
+            Matrix<T> result(rows.size(), cols.size());
+            for (int row : rows) {
+                checkBound(row, 0, rows_);
+            }
+            for (int col : cols) {
+                checkBound(col, 0, cols_);
+            }
+            for (int i = 0; i < rows.size(); ++i) {
+                int row = rows[i];
+                for (int j = 0; j < cols.size(); ++j) {
+                    int col = cols[j];
+                    result.unsafe(i, j) = unsafe(row, col);
+                }
+            }
+            return result;
         }
     };
 }

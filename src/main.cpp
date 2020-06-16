@@ -20,12 +20,25 @@ void testEqual();
 
 void testDenseCompute();
 
+void testSlice();
+
+template<typename T>
+void printMatrix(const Matrix<T> &mat) {
+    for (int i = 0; i < mat.getRows(); ++i) {
+        for (int j = 0; j < mat.getCols(); ++j) {
+            cout << mat.get(i, j) << " ";
+        }
+        cout << endl;
+    }
+}
+
 int main() {
     testMatrix();
     testVector();
     testOpencvMat();
     testAdd();
     testEqual();
+    testSlice();
     testDenseCompute();
     return 0;
 }
@@ -42,12 +55,7 @@ void testMatrix() {
         }
     }
 
-    for (int i = 0; i < mat.getRows(); ++i) {
-        for (int j = 0; j < mat.getCols(); ++j) {
-            cout << mat[i][j] << " ";
-        }
-        cout << endl;
-    }
+    printMatrix(mat);
 }
 
 void testVector() {
@@ -96,21 +104,11 @@ void testAdd() {
 
     Matrix<int> sum = mat1 + mat2;
 
-    for (int i = 0; i < sum.getRows(); ++i) {
-        for (int j = 0; j < sum.getCols(); ++j) {
-            cout << sum[i][j] << " ";
-        }
-        cout << endl;
-    }
+    printMatrix(sum);
 
     Matrix<int> diff = mat1 - mat2;
 
-    for (int i = 0; i < diff.getRows(); ++i) {
-        for (int j = 0; j < diff.getCols(); ++j) {
-            cout << diff[i][j] << " ";
-        }
-        cout << endl;
-    }
+    printMatrix(diff);
 }
 
 
@@ -153,4 +151,22 @@ void testDenseCompute() {
 
     cout << "Result: " << sum << endl;
     cout << "Elapsed time: " << chrono::duration_cast<chrono::milliseconds> (end - begin).count() << "ms" << endl;
+}
+
+void testSlice() {
+    Matrix<int> mat(3, 3);
+    mat[0][0] = 0;
+    mat[0][1] = 1;
+    mat[0][2] = 2;
+    mat[1][0] = 3;
+    mat[1][1] = 4;
+    mat[1][2] = 5;
+    mat[2][0] = 6;
+    mat[2][1] = 7;
+    mat[2][2] = 8;
+
+    printMatrix(mat.sliceRow(0, -1, 2));
+    printMatrix(mat.sliceCol(0, -1, -1));
+
+    printMatrix(mat.slice(0, 2, 2, 0, 2, 2));
 }

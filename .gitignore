@@ -78,3 +78,6 @@ fabric.properties
 
 # Build directory
 build
+
+# Debug directory
+debug

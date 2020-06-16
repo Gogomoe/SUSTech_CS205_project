@@ -24,6 +24,10 @@ void testDenseCompute();
 
 void testSlice();
 
+void testConv();
+
+void testPad();
+
 template<typename T>
 void printMatrix(const Matrix<T> &mat) {
     for (int i = 0; i < mat.getRows(); ++i) {
@@ -41,7 +45,9 @@ int main() {
     testAdd();
     testEqual();
     testSlice();
-    testDenseCompute();
+    // testDenseCompute();
+    testConv();
+    testPad();
     matrixTransportationTest();
     matrixConjugationTest();
     return 0;
@@ -131,8 +137,8 @@ void testEqual() {
 }
 
 void testDenseCompute() {
-    const int rows = 10000;
-    const int cols = 10000;
+    const int rows = 2500;
+    const int cols = 2500;
 
     Matrix<double> mat1(rows, cols);
     Matrix<double> mat2(rows, cols);
@@ -149,7 +155,7 @@ void testDenseCompute() {
 
     chrono::steady_clock::time_point begin = chrono::steady_clock::now();
     for (int i = 0; i < 1; ++i) {
-        sum = (mat1+mat2).sum();
+        sum = (mat1.matmul(mat2)).sum();
     }
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
 
@@ -173,4 +179,36 @@ void testSlice() {
     printMatrix(mat.sliceCol(0, -1, -1));
 
     printMatrix(mat.slice(0, 2, 2, 0, 2, 2));
+}
+
+void testConv() {
+    const int rows = 5;
+    const int cols = 5;
+
+    Matrix<double> mat(rows, cols);
+    Matrix<double> knl(3, 3);
+
+    for (int i = 0; i < rows*cols; ++i) {
+        mat.unsafe(i) = i;
+    }
+
+    for (int i = 0; i < 9; ++i) {
+        knl.unsafe(i) = i;
+    }
+
+    printMatrix(mat);
+    printMatrix(mat.convolve(knl));
+}
+
+void testPad() {
+    const int rows = 5;
+    const int cols = 5;
+
+    Matrix<double> mat(rows, cols);
+
+    for (int i = 0; i < rows*cols; ++i) {
+        mat.unsafe(i) = i;
+    }
+
+    printMatrix(mat.pad(2, 2));
 }

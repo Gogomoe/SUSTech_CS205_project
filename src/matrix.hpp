@@ -36,12 +36,15 @@ namespace matrix {
     private:
         int rows_;
         int cols_;
+        int size_;
         std::shared_ptr<T[]> mat_ptr_;
     public:
         // Initial matrix with specific rows and columns.
-        Matrix(int rows, int cols) : rows_(rows), cols_(cols), mat_ptr_(new T[rows * cols]()) {}
+        Matrix(int rows, int cols) : rows_(rows), cols_(cols), size_(rows*cols), mat_ptr_(new T[rows * cols]()) {}
+        Matrix(int rows, int cols, bool init) : rows_(rows), cols_(cols), size_(rows*cols), mat_ptr_(init ? new T[rows * cols]() : new T[rows * cols]) {}
 
         Matrix(const Matrix<T> &mat) : Matrix(mat.rows_, mat.cols_) {
+            #pragma omp parallel for collapse(2)
             for (int i = 0; i < rows_; ++i) {
                 for (int j = 0; j < cols_; ++j) {
                     unsafe(i, j) = mat.unsafe(i, j);
@@ -52,6 +55,7 @@ namespace matrix {
         Matrix(Matrix<T> &&mat) noexcept: rows_(mat.rows_), cols_(mat.cols_), mat_ptr_(mat.mat_ptr_) {}
 
         explicit Matrix(const cv::Mat_<T> &mat) : Matrix(mat.rows, mat.cols) {
+            #pragma omp parallel for collapse(2)
             for (int row = 0; row < rows_; ++row) {
                 for (int col = 0; col < cols_; ++col) {
                     mat_ptr_[row * cols_ + col] = mat(row, col);
@@ -69,6 +73,14 @@ namespace matrix {
 
         [[nodiscard]] int getRows() const {
             return rows_;
+        }
+
+        void reshape(int rows, int cols) {
+            if (rows * cols != size_) {
+                throw std::length_error("The matrices don't have the same size!");
+            }
+            rows_ = rows;
+            cols_ = cols;
         }
 
         Matrix<T> &set(int row, int col, T val) {
@@ -106,6 +118,14 @@ namespace matrix {
             return mat_ptr_[row * cols_ + col];
         }
 
+        inline T &unsafe(int idx) {
+            return mat_ptr_[idx];
+        }
+
+        inline const T &unsafe(int idx) const {
+            return mat_ptr_[idx];
+        }
+
         Vector<T> operator[](int row) {
             checkBound(row, 0, rows_);
             return Vector<T>(row, cols_, mat_ptr_);
@@ -117,11 +137,12 @@ namespace matrix {
             }
             rows_ = other.rows_;
             cols_ = other.cols_;
-            mat_ptr_.reset(new T[rows_ * cols_]());
-            for (int i = 0; i < rows_; ++i) {
-                for (int j = 0; j < cols_; ++j) {
-                    unsafe(i, j) = other.unsafe(i, j);
-                }
+            size_ = other.size_;
+            mat_ptr_.reset(new T[size_]);
+
+            #pragma omp parallel for
+            for (int i = 0; i < size_; ++i) {
+                unsafe(i) = other.unsafe(i);
             }
             return *this;
         }
@@ -129,6 +150,7 @@ namespace matrix {
         Matrix<T> &operator=(Matrix<T> &&other) noexcept {
             rows_ = other.rows_;
             cols_ = other.cols_;
+            size_ = other.size_;
             mat_ptr_ = other.mat_ptr_;
             return *this;
         }
@@ -138,18 +160,13 @@ namespace matrix {
                 return false;
             }
 
-            bool ret = true;
-            #pragma omp parallel for collapse(2)
-            for (int i = 0; i < rows_; ++i) {
-                for (int j = 0; j < cols_; ++j) {
-                    if (!ret) continue;
-                    if (unsafe(i, j) != other.unsafe(i, j)) {
-                        ret = false;
-                        // return false;
-                    }
-                }
+            bool isEqual = true;
+
+            #pragma omp parallel for reduction(&: isEqual)
+            for (int i = 0; i < size_; ++i) {
+                isEqual &= (unsafe(i) == other.unsafe(i));
             }
-            return ret;
+            return isEqual;
         }
 
         bool operator!=(const Matrix &rhs) const {
@@ -158,6 +175,7 @@ namespace matrix {
 
         explicit operator cv::Mat_<T>() const {
             cv::Mat_<T> mat(rows_, cols_);
+
             #pragma omp parallel for collapse(2)
             for (int row = 0; row < rows_; ++row) {
                 for (int col = 0; col < cols_; ++col) {
@@ -173,25 +191,15 @@ namespace matrix {
             }
         }
 
-        static void assertMatricesWithSameSize(const Matrix<T> &first, const Matrix<T> &second) {
-            if (first.getCols() * first.getRows() != second.getCols() * second.getRows()) {
-                throw std::length_error("The matrices don't have the same size!");
-            }
-        }
-
         // add
         friend Matrix<T> operator+(const Matrix<T> &first, const Matrix<T> &second) {
             Matrix<T>::assertMatricesWithSameShape(first, second);
 
-            int rows = first.getRows();
-            int cols = first.getCols();
-            matrix::Matrix<T> result(rows, cols);
+            matrix::Matrix<T> result(first.rows_, first.cols_, false);
 
-            #pragma omp parallel for collapse(2)
-            for (int i = 0; i < rows; ++i) {
-                for (int j = 0; j < cols; ++j) {
-                    result.unsafe(i, j) = first.unsafe(i, j) + second.unsafe(i, j);
-                }
+            #pragma omp parallel for
+            for (int i = 0; i < first.size_; ++i) {
+                result.unsafe(i) = first.unsafe(i) + second.unsafe(i);
             }
             return result;
         }
@@ -200,78 +208,61 @@ namespace matrix {
         friend Matrix<T> operator-(const Matrix<T> &first, const Matrix<T> &second) {
             Matrix<T>::assertMatricesWithSameShape(first, second);
 
-            int rows = first.getRows();
-            int cols = first.getCols();
-            matrix::Matrix<T> result(rows, cols);
+            matrix::Matrix<T> result(first.rows_, first.cols_, false);
 
-            #pragma omp parallel for collapse(2)
-            for (int i = 0; i < rows; ++i) {
-                for (int j = 0; j < cols; ++j) {
-                    result.unsafe(i, j) = first.unsafe(i, j) - second.unsafe(i, j);
-                }
+            #pragma omp parallel for
+            for (int i = 0; i < first.size_; ++i) {
+                result.unsafe(i) = first.unsafe(i) - second.unsafe(i);
             }
             return result;
         }
 
         // unary minus
         Matrix<T> operator-() const {
-            matrix::Matrix<T> result(rows_, cols_);
-            #pragma omp parallel for collapse(2)
-            for (int i = 0; i < rows_; ++i) {
-                for (int j = 0; j < cols_; ++j) {
-                    result.unsafe(i, j) = -unsafe(i, j);
-                }
+            matrix::Matrix<T> result(rows_, cols_, false);
+
+            #pragma omp parallel for
+            for (int i = 0; i < size_; ++i) {
+                result.unsafe(i) = -unsafe(i);
             }
             return result;
         }
 
         // scalar multiplication
         friend Matrix<T> operator*(const T &val, const Matrix<T> &mat) {
-            int rows = mat.getRows();
-            int cols = mat.getCols();
-            matrix::Matrix<T> result(rows, cols);
+            matrix::Matrix<T> result(mat.rows_, mat.cols_, false);
 
-            #pragma omp parallel for collapse(2)
-            for (int i = 0; i < rows; ++i) {
-                for (int j = 0; j < cols; ++j) {
-                    result.unsafe(i, j) = mat.unsafe(i, j) * val;
-                }
+            #pragma omp parallel for
+            for (int i = 0; i < mat.size_; ++i) {
+                result.unsafe(i) = mat.unsafe(i) * val;
             }
             return result;
         }
 
         // scalar multiplication
         friend Matrix<T> operator*(const Matrix<T> &mat, const T &val) {
-            int rows = mat.getRows();
-            int cols = mat.getCols();
-            matrix::Matrix<T> result(rows, cols);
+            matrix::Matrix<T> result(mat.rows_, mat.cols_, false);
 
-            #pragma omp parallel for collapse(2)
-            for (int i = 0; i < rows; ++i) {
-                for (int j = 0; j < cols; ++j) {
-                    result.unsafe(i, j) = mat.unsafe(i, j) * val;
-                }
+            #pragma omp parallel for
+            for (int i = 0; i < mat.size_; ++i) {
+                result.unsafe(i) = mat.unsafe(i) * val;
             }
             return result;
         }
 
         // scalar division
         friend Matrix<T> operator/(const Matrix<T> &mat, const T &val) {
-            int rows = mat.getRows();
-            int cols = mat.getCols();
-            matrix::Matrix<T> result(rows, cols);
+            matrix::Matrix<T> result(mat.rows_, mat.cols_, false);
 
-            #pragma omp parallel for collapse(2)
-            for (int i = 0; i < rows; ++i) {
-                for (int j = 0; j < cols; ++j) {
-                    result.unsafe(i, j) = mat.unsafe(i, j) / val;
-                }
+            #pragma omp parallel for
+            for (int i = 0; i < mat.size_; ++i) {
+                result.unsafe(i) = mat.unsafe(i) / val;
             }
             return result;
         }
 
         Matrix<T> transposition() const {
-            matrix::Matrix<T> result(cols_, rows_);
+            matrix::Matrix<T> result(cols_, rows_, false);
 
             #pragma omp parallel for collapse(2)
             for (int i = 0; i < rows_; ++i) {
@@ -289,7 +280,7 @@ namespace matrix {
             for (int i = 0; i < rows_; ++i) {
                 for (int j = 0; j < cols_; ++j) {
                     const Complex &value = result.unsafe(j, i);
-                    result.unsafe(j, i) = Complex(value.getReal(), value.getImag());
+                    result.unsafe(j, i) = Complex(value.getReal(), -value.getImag());
                 }
             }
             return result;
@@ -299,15 +290,11 @@ namespace matrix {
         Matrix<T> multiply(const Matrix<T> &other) const {
             Matrix<T>::assertMatricesWithSameShape(*this, other);
 
-            int rows = getRows();
-            int cols = getCols();
-            matrix::Matrix<T> result(rows, cols);
+            matrix::Matrix<T> result(rows_, cols_, false);
 
-            #pragma omp parallel for collapse(2)
-            for (int i = 0; i < rows; ++i) {
-                for (int j = 0; j < cols; ++j) {
-                    result.unsafe(i, j) = unsafe(i, j) * other.unsafe(i, j);
-                }
+            #pragma omp parallel for
+            for (int i = 0; i < size_; ++i) {
+                result.unsafe(i) = unsafe(i) * other.unsafe(i);
             }
             return result;
         }
@@ -321,13 +308,71 @@ namespace matrix {
             int rows = getRows();
             int cols = other.getCols();
 
-            matrix::Matrix<T> result(rows, cols);
+            matrix::Matrix<T> result(rows, cols, false);
 
-            #pragma omp parallel for collapse(3)
-            for (int i = 0; i < rows; ++i) { // reorder for loops to avoid stride memory access
-                for (int j = 0; j < getCols(); ++j) {
-                    for (int k = 0; k < cols; ++k) {
-                        result.unsafe(i, k) += unsafe(i, j) * other.unsafe(j, k);
+            matrix::Matrix<T> trans = other.transposition(); // convert row-major to column-major to avoid stride memory access
+
+            #pragma omp parallel for collapse(2)
+            for (int i = 0; i < rows; ++i) {
+                for (int j = 0; j < cols; ++j) {
+                    T sumVal = T();
+                    #pragma omp parallel for reduction(+: sumVal)
+                    for (int k = 0; k < cols_; ++k) {
+                        sumVal += unsafe(i, k) * other.unsafe(j, k);
+                    }
+                    result.unsafe(i, j) = sumVal;
+                }
+            }
+            return result;
+        }
+
+        Matrix<T> pad(int padRows, int padCols) const {
+            int rows = rows_ + 2*padRows;
+            int cols = cols_ + 2*padCols;
+            matrix::Matrix<T> result(rows, cols, false);
+
+            const T zero = T();
+
+            #pragma omp parallel for collapse(2)
+            for (int i = 0; i < rows; ++i) {
+                for (int j = 0; j < cols; ++j) {
+                    int i_ = i - padRows;
+                    int j_ = j - padCols;
+                    result.unsafe(i, j) = (0<=i_ && i_<rows_ && 0<=j_ && j_<cols_) ? unsafe(i_, j_) : zero;
+                }
+            }
+            return result;
+        }
+
+        Matrix<T> convolve(const Matrix<T> &knl) const {
+            if (rows_ < knl.getRows() || cols_ < knl.getCols()) {
+                throw std::length_error("Kernel is larger than this matrix!");
+            }
+
+            int rows = rows_ - knl.getRows() + 1;
+            int cols = cols_ - knl.getCols() + 1;
+            matrix::Matrix<T> result(rows, cols, false);
+
+            const T zero = T();
+
+            #pragma omp parallel for
+            for (int i = 0; i < result.size_; ++i) {
+                result.unsafe(i) = zero;
+            }
+
+            for (int i = 0; i < knl.getRows(); ++i) {
+                for (int j = 0; j < knl.getCols(); ++j) {
+                    int knl_i = knl.getRows() - i - 1;
+                    int knl_j = knl.getCols() - j - 1;
+                    T k = knl.unsafe(knl_i, knl_j);
+                    #pragma omp parallel for collapse(2)
+                    for (int i_ = 0; i_ < rows_; ++i_) {
+                        for (int j_ = 0; j_ < cols_; ++j_) {
+                            int dst_i = i_ - i;
+                            int dst_j = j_ - j;
+                            if(!(0<=dst_i && dst_i<rows && 0<=dst_j && dst_j<cols)) continue;
+                            result.unsafe(dst_i, dst_j) += unsafe(i_, j_) * k;
+                        }
                     }
                 }
             }
@@ -335,19 +380,43 @@ namespace matrix {
         }
 
         T sum() const {
-            int rows = getRows();
-            int cols = getCols();
-
             T sumVal = T();
 
-            #pragma omp parallel for reduction(+: sumVal) collapse(2)
-            for (int i = 0; i < rows; ++i) {
-                for (int j = 0; j < cols; ++j) {
-                    sumVal += unsafe(i, j);
-                }
+            #pragma omp parallel for reduction(+: sumVal)
+            for (int i = 0; i < size_; ++i) {
+                sumVal += unsafe(i);
             }
-
             return sumVal;
+        }
+
+        T avg() const {
+            T avgVal = T();
+
+            #pragma omp parallel for reduction(+: avgVal)
+            for (int i = 0; i < size_; ++i) {
+                avgVal += unsafe(i) / size_;
+            }
+            return avgVal;
+        }
+
+        T max() const {
+            T maxVal = unsafe(0);
+
+            #pragma omp parallel for reduction(max: maxVal)
+            for (int i = 0; i < size_; ++i) {
+                maxVal = maxVal>unsafe(i) ? maxVal : unsafe(i);
+            }
+            return maxVal;
+        }
+
+        T min() const {
+            T minVal = unsafe(0);
+
+            #pragma omp parallel for reduction(min: minVal)
+            for (int i = 0; i < size_; ++i) {
+                minVal = minVal<unsafe(i) ? minVal : unsafe(i);
+            }
+            return minVal;
         }
 
         Matrix<T> sliceRow(int start = 0, int end = -1, int step = 1) {
@@ -355,11 +424,13 @@ namespace matrix {
         }
 
         Matrix<T> sliceRow(const std::vector<int> &rows) {
-            Matrix<T> result(rows.size(), cols_);
-            for (int i = 0; i < rows.size(); ++i) {
-                int row = rows[i];
-                checkBound(row, 0, rows_);
+            Matrix<T> result(rows.size(), cols_, false);
+
+            #pragma omp parallel for collapse(2)
+            for (size_t i = 0; i < rows.size(); ++i) {
                 for (int j = 0; j < cols_; ++j) {
+                    int row = rows[i];
+                    checkBound(row, 0, rows_);
                     result.unsafe(i, j) = unsafe(row, j);
                 }
             }
@@ -371,11 +442,13 @@ namespace matrix {
         }
 
         Matrix<T> sliceCol(const std::vector<int> &cols) {
-            Matrix<T> result(rows_, cols.size());
-            for (int i = 0; i < cols.size(); ++i) {
-                int col = cols[i];
-                checkBound(col, 0, cols_);
+            Matrix<T> result(rows_, cols.size(), false);
+
+            #pragma omp parallel for collapse(2)
+            for (size_t i = 0; i < cols.size(); ++i) {
                 for (int j = 0; j < rows_; ++j) {
+                    int col = cols[i];
+                    checkBound(col, 0, cols_);
                     result.unsafe(j, i) = unsafe(j, col);
                 }
             }
@@ -386,23 +459,38 @@ namespace matrix {
                 int rowStart = 0, int rowEnd = -1, int rowStep = 1,
                 int colStart = 0, int colEnd = -1, int colStep = 1
         ) {
-            return slice(
-                    makeSlice(rowStart, rowEnd, rowStep, rows_),
-                    makeSlice(colStart, colEnd, colStep, cols_)
-            );
+            std::vector<int> rows, cols;
+            #pragma omp parallel sections
+            {
+                #pragma omp section
+                rows = makeSlice(rowStart, rowEnd, rowStep, rows_);
+
+                #pragma omp section
+                cols = makeSlice(colStart, colEnd, colStep, cols_);
+            }
+            return slice(rows, cols);
         }
 
         Matrix<T> slice(const std::vector<int> &rows, const std::vector<int> &cols) {
-            Matrix<T> result(rows.size(), cols.size());
-            for (int row : rows) {
-                checkBound(row, 0, rows_);
+            Matrix<T> result(rows.size(), cols.size(), false);
+            
+            #pragma omp parallel sections
+            {
+                #pragma omp section
+                for (int row : rows) {
+                    checkBound(row, 0, rows_);
+                }
+
+                #pragma omp section
+                for (int col : cols) {
+                    checkBound(col, 0, cols_);
+                }
             }
-            for (int col : cols) {
-                checkBound(col, 0, cols_);
-            }
-            for (int i = 0; i < rows.size(); ++i) {
-                int row = rows[i];
-                for (int j = 0; j < cols.size(); ++j) {
+            
+            #pragma omp parallel for collapse(2)
+            for (size_t i = 0; i < rows.size(); ++i) {
+                for (size_t j = 0; j < cols.size(); ++j) {
+                    int row = rows[i];
                     int col = cols[j];
                     result.unsafe(i, j) = unsafe(row, col);
                 }

@@ -28,6 +28,12 @@ Matrix<T> fromJson(json json);
 template<typename T>
 json toJson(const Matrix<T> &mat);
 
+template<typename T>
+void handleCrossTimes(json json, Response &resp);
+
+template<typename T>
+void handleInnerTimes(json json, Response &resp);
+
 Matrix<Vec3b> fromFormData(const MultipartFormData &data);
 
 
@@ -81,6 +87,24 @@ int main() {
         resp.set_content(string(buf.begin(), buf.end()), "image/jpeg");
     });
 
+    svr.Post("/api/cross_times", [](const Request &req, Response &resp) {
+        auto body = json::parse(req.body);
+        if (body["type"] == "number") {
+            handleCrossTimes<double>(body, resp);
+        } else {
+            throw std::runtime_error("unsupported plus type");
+        }
+    });
+
+    svr.Post("/api/inner_times", [](const Request &req, Response &resp) {
+        auto body = json::parse(req.body);
+        if (body["type"] == "number") {
+            handleInnerTimes<double>(body, resp);
+        } else {
+            throw std::runtime_error("unsupported plus type");
+        }
+    });
+
     svr.Post("/api/negative", [](const Request &req, Response &resp) {
         auto body = json::parse(req.body);
         if (body["type"] == "number") {
@@ -124,6 +148,22 @@ void handleMinus(json &json, Response &resp) {
     Matrix<T> mat2 = fromJson<T>(json["mat2"]);
     Matrix<T> diff = mat1 - mat2;
     resp.set_content(toJson(diff).dump(), "application/json");
+}
+
+template<typename T>
+void handleCrossTimes(json json, Response &resp) {
+    Matrix<T> mat1 = fromJson<T>(json["mat1"]);
+    Matrix<T> mat2 = fromJson<T>(json["mat2"]);
+    Matrix<T> res = mat1.matmul(mat2);
+    resp.set_content(toJson(res).dump(), "application/json");
+}
+
+template<typename T>
+void handleInnerTimes(json json, Response &resp) {
+    Matrix<T> mat1 = fromJson<T>(json["mat1"]);
+    Matrix<T> mat2 = fromJson<T>(json["mat2"]);
+    Matrix<T> res = mat1.multiply(mat2);
+    resp.set_content(toJson(res).dump(), "application/json");
 }
 
 template<typename T>

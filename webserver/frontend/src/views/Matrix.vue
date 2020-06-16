@@ -4,18 +4,20 @@
         <a-row>
             <a-col :span="10">
                 <h3>Matrix A</h3>
-                <MatrixInput ref="matrixA"></MatrixInput>
+                <MatrixInput ref="matrixA" v-on:update:result="result = $event"></MatrixInput>
             </a-col>
             <a-col :span="4">
                 <div class="operator-panel">
+                    <a-button v-on:click="exchange">↔</a-button>
                     <a-button v-on:click="plus">A + B</a-button>
                     <a-button v-on:click="minus">A - B</a-button>
-                    <a-button v-on:click="times">A × B</a-button>
+                    <a-button v-on:click="cross_times">A × B</a-button>
+                    <a-button v-on:click="inner_times">A · B</a-button>
                 </div>
             </a-col>
             <a-col :span="10">
                 <h3>Matrix B</h3>
-                <MatrixInput ref="matrixB"></MatrixInput>
+                <MatrixInput ref="matrixB" v-on:update:result="result = $event"></MatrixInput>
             </a-col>
         </a-row>
         <template v-if="result">
@@ -41,10 +43,15 @@
 
     function binaryOperate(api) {
         return async function () {
-            let A = this.readMatrix(this.$refs.matrixA);
-            let B = this.readMatrix(this.$refs.matrixB);
+            let A = this.$refs.matrixA.readMatrix();
+            let B = this.$refs.matrixB.readMatrix();
+            let isNumber = A.type === "number" && B.type === "number";
+            if (isNumber) {
+                A.matrix.data = A.matrix.data.map(row => row.map(it => parseFloat(it)));
+                B.matrix.data = B.matrix.data.map(row => row.map(it => parseFloat(it)));
+            }
             let data = {
-                type: A.type === "number" && B.type === "number" ? "number" : "string",
+                type: isNumber ? "number" : "string",
                 mat1: A.matrix,
                 mat2: B.matrix,
             }
@@ -74,44 +81,36 @@
         methods: {
             plus: binaryOperate("/api/plus"),
             minus: binaryOperate("/api/minus"),
-            times: binaryOperate("/api/times"),
-
-            readMatrix: function (root) {
-                let rows = root.rows;
-                let cols = root.cols;
-                let isNumber = true;
+            cross_times: binaryOperate("/api/cross_times"),
+            inner_times: binaryOperate("/api/inner_times"),
+            exchange: function () {
+                let A = this.$refs.matrixA.readMatrix().matrix;
+                let B = this.$refs.matrixB.readMatrix().matrix;
+                let rows = Math.max(A.rows, B.rows);
+                let cols = Math.max(A.cols, B.cols);
                 for (let i = 0; i < rows; i++) {
+                    if (A.data.length <= i) {
+                        A.data.push([]);
+                    }
+                    if (B.data.length <= i) {
+                        B.data.push([]);
+                    }
                     for (let j = 0; j < cols; j++) {
-                        let cell = root.matrix[i][j].trim();
-                        if (cell.length === 0) {
-                            continue;
+                        if (A.data[i].length <= i) {
+                            A.data[i].push("");
                         }
-                        if (isNaN(cell)) {
-                            isNumber = false;
+                        if (B.data[i].length <= i) {
+                            B.data[i].push("");
                         }
                     }
                 }
+                this.$refs.matrixA.rows = B.rows;
+                this.$refs.matrixA.cols = B.cols;
+                this.$refs.matrixA.matrix = B.data;
 
-                let result = [];
-                for (let i = 0; i < rows; i++) {
-                    result.push([]);
-                    for (let j = 0; j < cols; j++) {
-                        if (isNumber) {
-                            result[i].push(parseFloat(root.matrix[i][j]));
-                        } else {
-                            result[i].push(root.matrix[i][j]);
-                        }
-                    }
-                }
-
-                return {
-                    type: isNumber ? "number" : "string",
-                    matrix: {
-                        rows: rows,
-                        cols: cols,
-                        data: result
-                    }
-                };
+                this.$refs.matrixB.rows = A.rows;
+                this.$refs.matrixB.cols = A.cols;
+                this.$refs.matrixB.matrix = A.data;
             }
         }
     }

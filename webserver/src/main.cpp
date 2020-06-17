@@ -87,16 +87,6 @@ int main() {
         }
     });
 
-    svr.Post("/api/image/plus", [](const Request &req, Response &resp) {
-        Matrix<Vec3b> img1 = fromFormData(req.get_file_value("img1"));
-        Matrix<Vec3b> img2 = fromFormData(req.get_file_value("img2"));
-        Matrix<Vec3b> img3 = img1 + img2;
-        cv::Mat_<Vec3b> mat = (cv::Mat_<Vec3b>) img3;
-        std::vector<uchar> buf;
-        cv::imencode(".jpg", mat, buf);
-        resp.set_content(string(buf.begin(), buf.end()), "image/jpeg");
-    });
-
     svr.Post("/api/minus", [](const Request &req, Response &resp) {
         auto body = json::parse(req.body);
         if (body["type"] == "number") {
@@ -104,16 +94,6 @@ int main() {
         } else {
             throw std::runtime_error("unsupported minus type");
         }
-    });
-
-    svr.Post("/api/image/minus", [](const Request &req, Response &resp) {
-        Matrix<Vec3b> img1 = fromFormData(req.get_file_value("img1"));
-        Matrix<Vec3b> img2 = fromFormData(req.get_file_value("img2"));
-        Matrix<Vec3b> img3 = img1 - img2;
-        cv::Mat_<Vec3b> mat = (cv::Mat_<Vec3b>) img3;
-        std::vector<uchar> buf;
-        cv::imencode(".jpg", mat, buf);
-        resp.set_content(string(buf.begin(), buf.end()), "image/jpeg");
     });
 
     svr.Post("/api/cross_times", [](const Request &req, Response &resp) {
@@ -228,6 +208,62 @@ int main() {
         }
     });
 
+    svr.Post("/api/image/plus", [](const Request &req, Response &resp) {
+        Matrix<Vec3b> img1 = fromFormData(req.get_file_value("img1"));
+        Matrix<Vec3b> img2 = fromFormData(req.get_file_value("img2"));
+        Matrix<Vec3b> img3 = img1 + img2;
+        cv::Mat_<Vec3b> mat = (cv::Mat_<Vec3b>) img3;
+        std::vector<uchar> buf;
+        cv::imencode(".jpg", mat, buf);
+        resp.set_content(string(buf.begin(), buf.end()), "image/jpeg");
+    });
+
+    svr.Post("/api/image/minus", [](const Request &req, Response &resp) {
+        Matrix<Vec3b> img1 = fromFormData(req.get_file_value("img1"));
+        Matrix<Vec3b> img2 = fromFormData(req.get_file_value("img2"));
+        Matrix<Vec3b> img3 = img1 - img2;
+        cv::Mat_<Vec3b> mat = (cv::Mat_<Vec3b>) img3;
+        std::vector<uchar> buf;
+        cv::imencode(".jpg", mat, buf);
+        resp.set_content(string(buf.begin(), buf.end()), "image/jpeg");
+    });
+
+    svr.Post("/api/image/convolve", [](const Request &req, Response &resp) {
+        Matrix<Vec3b> img1 = fromFormData(req.get_file_value("img1"));
+
+        auto json = json::parse(req.get_file_value("json").content);
+        Matrix<double> kernel = fromJson<double>(json["kernel"]);
+
+        int rows = img1.getRows();
+        int cols = img1.getCols();
+        Matrix<double> r(rows, cols), g(rows, cols), b(rows, cols);
+        for (int i = 0; i < rows * cols; ++i) {
+            r.unsafe(i) = img1.unsafe(i)[0];
+            g.unsafe(i) = img1.unsafe(i)[1];
+            b.unsafe(i) = img1.unsafe(i)[2];
+        }
+
+        r = r.convolve(kernel);
+        g = g.convolve(kernel);
+        b = b.convolve(kernel);
+
+        rows = r.getRows();
+        cols = r.getCols();
+        Matrix<Vec3b> result(rows, cols);
+        for (int i = 0; i < rows * cols; ++i) {
+            uchar rv = std::min(std::max((int) (r.unsafe(i) + 0.5), 0), 255);
+            uchar gv = std::min(std::max((int) (g.unsafe(i) + 0.5), 0), 255);
+            uchar bv = std::min(std::max((int) (b.unsafe(i) + 0.5), 0), 255);
+            result.unsafe(i) = Vec3b(rv, gv, bv);
+        }
+
+        cv::Mat_<Vec3b> mat = (cv::Mat_<Vec3b>) result;
+        std::vector<uchar> buf;
+        cv::imencode(".jpg", mat, buf);
+        resp.set_content(string(buf.begin(), buf.end()), "image/jpeg");
+    });
+
+
     svr.Get("/stop", [&](const Request &req, Response &resp) {
         resp.set_content("stop", "text/plain");
         std::cout << "stop" << std::endl;
@@ -323,13 +359,13 @@ void handleDeterminant(json &json, Response &resp) {
 }
 
 template<typename T>
-void handleInverse(json &json, Response &resp){
+void handleInverse(json &json, Response &resp) {
     Matrix<T> mat1 = fromJson<T>(json["mat1"]);
     resp.set_content(toJson(mat1.inverse()).dump(), "application/json");
 }
 
 template<typename T>
-void handleTrace(json &json, Response &resp){
+void handleTrace(json &json, Response &resp) {
     Matrix<T> mat1 = fromJson<T>(json["mat1"]);
     resp.set_content(toJson(toMatrix(mat1.trace())).dump(), "application/json");
 }

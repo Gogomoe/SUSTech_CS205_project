@@ -1,4 +1,5 @@
 ###
+
 POST http://localhost:8080/api/image/plus
 Content-Type: multipart/form-data; boundary=WebAppBoundary
 
@@ -15,6 +16,7 @@ Content-Disposition: form-data; name="img2"; filename="image_mask.png"
 --WebAppBoundary--
 
 ###
+
 POST http://localhost:8080/api/image/minus
 Content-Type: multipart/form-data; boundary=WebAppBoundary
 
@@ -27,6 +29,33 @@ Content-Disposition: form-data; name="img1"; filename="image.png"
 Content-Disposition: form-data; name="img2"; filename="image_mask.png"
 
 < ./image_mask.png
+
+--WebAppBoundary--
+
+###
+
+POST http://localhost:8080/api/image/convolve
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="img1"; filename="image.png"
+
+< ./image.png
+
+--WebAppBoundary
+Content-Disposition: form-data; name="json"
+
+{
+  "kernel": {
+    "rows": 3,
+    "cols": 3,
+    "data": [
+      [0.11, 0.11, 0.11],
+      [0.11, 0.11, 0.11],
+      [0.11, 0.11, 0.11]
+    ]
+  }
+}
 
 --WebAppBoundary--
 

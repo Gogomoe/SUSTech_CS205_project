@@ -6,6 +6,7 @@
 
 #include "matrix.hpp"
 #include "../test/test.hpp"
+#include "../test/benchmark.hpp"
 
 using namespace matrix;
 using namespace std;
@@ -39,6 +40,7 @@ void printMatrix(const Matrix<T> &mat) {
 }
 
 int main() {
+    benchmark();
     testMatrix();
     testVector();
     testOpencvMat();

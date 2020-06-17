@@ -286,28 +286,28 @@ namespace matrix {
             return result;
         }
 
-        void getConfactor(Matrix<T> &mat, Matrix<T> &t, int s, int e, int n) {
+        void getConfactor(Matrix<T> &t, int s, int e, int n) const {
             int i = 0, j = 0;
             for (int row = 0; row < n; ++row) {
                 for (int col = 0; col < n; ++col) {
                     if (row != s && col != e) {
-                        t.unsafe(i, j++) = mat.unsafe(row, col);
+                        t.unsafe(i, j++) = unsafe(row, col);
                         if (j == n-1) j = 0, ++i;
                     }
                 }
             }
         }
 
-        T determinant(Matrix<T> &mat, int n) {
-            if (mat.getRows() != mat.getCols()) return 0;
+        T determinant(int n) const {
+            if (getRows() != getCols()) return 0;
             T result = 0;
-            if (n == 1) result = mat.unsafe(0, 0);
+            if (n == 1) result = unsafe(0, 0);
             else {
                 Matrix<T> t(n, n);
                 T mul = 1;
                 for (int i = 0; i < n; ++i) {
-                    getConfactor(mat, t, 0, i, n);
-                    result += mul * mat.unsafe(0, i) * determinant(t, n - 1);
+                    getConfactor(t, 0, i, n);
+                    result += mul * unsafe(0, i) * t.determinant(n - 1);
                     mul = -mul;
                 }
             }
@@ -447,7 +447,7 @@ namespace matrix {
             return minVal;
         }
 
-        void adjoint(Matrix<T> &t) {
+        void adjoint(Matrix<T> &t) const {
             int n = t.getRows();
             if (n == 1) {
                 t.unsafe(0, 0) = 1;
@@ -457,23 +457,32 @@ namespace matrix {
             Matrix<T> temp(n, n);
             for (int i = 0; i < n; ++i) {
                 for (int j = 0; j < n; ++j) {
-                    getConfactor(*this, temp, i, j, n);
+                    getConfactor(temp, i, j, n);
                     mul = ((i + j) & 1) ? -1 : 1;
-                    t.unsafe(j, i) = mul * determinant(temp, n - 1);
+                    t.unsafe(j, i) = mul * temp.determinant(n - 1);
                 }
             }
         }
 
-        Matrix<T> inverse() {
+        Matrix<T> inverse() const {
             if (rows_ != cols_) return Matrix<T>(0, 0);
             Matrix<T> result(rows_, cols_);
-            T det = determinant(*this, rows_);
+            T det = determinant(rows_);
             if (det == 0) return Matrix<T>(0, 0);
             Matrix<T> t(rows_, cols_);
             adjoint(t);
             for (int i = 0; i < rows_; ++i)
                 for (int j = 0; j < cols_; ++j)
                     result.unsafe(i, j) = t.unsafe(i, j) / det;
+            return result;
+        }
+
+        T trace() {
+            if (rows_ != cols_) return 0;
+            T result = 0;
+            for (int i = 0; i < rows_; ++i)
+                result = result + unsafe(i, i);
+            return result;
         }
 
         Matrix<T> sliceRow(int start = 0, int end = -1, int step = 1) {

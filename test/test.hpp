@@ -11,4 +11,6 @@ bool determinantTest();
 
 bool inverseTest();
 
+bool traceTest();
+
 #endif //MATRIX_TEST_HPP

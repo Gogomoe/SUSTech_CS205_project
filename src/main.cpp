@@ -55,6 +55,9 @@ int main() {
 
     // test arithmetic
     determinantTest();
+    inverseTest();
+    traceTest();
+
     return 0;
 }
 

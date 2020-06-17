@@ -29,6 +29,8 @@ void testConv();
 
 void testPad();
 
+void testEigen();
+
 template<typename T>
 void printMatrix(const Matrix<T> &mat) {
     for (int i = 0; i < mat.getRows(); ++i) {
@@ -40,7 +42,7 @@ void printMatrix(const Matrix<T> &mat) {
 }
 
 int main() {
-    benchmark();
+//    benchmark();
     testMatrix();
     testVector();
     testOpencvMat();
@@ -50,6 +52,8 @@ int main() {
     // testDenseCompute();
     testConv();
     testPad();
+
+    testEigen();
 
     // test transport
     transpositionTest();
@@ -155,7 +159,7 @@ void testDenseCompute() {
 
     double sum;
 
-    #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             mat1.unsafe(i, j) = i;
@@ -170,7 +174,7 @@ void testDenseCompute() {
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
 
     cout << "Result: " << sum << endl;
-    cout << "Elapsed time: " << chrono::duration_cast<chrono::milliseconds> (end - begin).count() << "ms" << endl;
+    cout << "Elapsed time: " << chrono::duration_cast<chrono::milliseconds>(end - begin).count() << "ms" << endl;
 }
 
 void testSlice() {
@@ -198,7 +202,7 @@ void testConv() {
     Matrix<double> mat(rows, cols);
     Matrix<double> knl(3, 3);
 
-    for (int i = 0; i < rows*cols; ++i) {
+    for (int i = 0; i < rows * cols; ++i) {
         mat.unsafe(i) = i;
     }
 
@@ -216,9 +220,25 @@ void testPad() {
 
     Matrix<double> mat(rows, cols);
 
-    for (int i = 0; i < rows*cols; ++i) {
+    for (int i = 0; i < rows * cols; ++i) {
         mat.unsafe(i) = i;
     }
 
     printMatrix(mat.pad(2, 2));
+}
+
+void testEigen() {
+    Matrix<double> mat(3, 3);
+    double arr[9] = {2, 1, 0, 1, 3, 1, 0, 1, 2};
+    mat.set(9, arr);
+
+    vector<pair<double, vector<double>>> result = mat.eigen();
+    for (auto &pair:result) {
+        cout << "value:" << pair.first << "    " << "vector: [";
+        for (auto &it:pair.second) {
+            cout << it << ",";
+        }
+        cout << "]" << endl;
+    }
+
 }

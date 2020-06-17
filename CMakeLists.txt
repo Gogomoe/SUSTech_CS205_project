@@ -7,6 +7,7 @@ aux_source_directory(src DIR_SRC)
 aux_source_directory(test DIR_TEST)
 
 find_package(OpenCV REQUIRED)
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 include_directories(
         ${PROJECT_SOURCE_DIR}
         ${OpenCV_INCLUDE_DIRS}
@@ -14,6 +15,7 @@ include_directories(
 
 add_executable(matrix ${DIR_SRC} ${DIR_TEST} src/Complex.cpp test/matrixArithmeticTest.cpp test/matrixTransportTest.cpp test/test.hpp)
 target_link_libraries(matrix PRIVATE ${OpenCV_LIBS})
+target_link_libraries(matrix PRIVATE Eigen3::Eigen)
 
 if(${DEBUG})
         target_compile_options(matrix PRIVATE -g)
@@ -47,3 +49,4 @@ SET(CMAKE_CXX_FLAGS -pthread)
 aux_source_directory(webserver/src WEB_SRC)
 add_executable(web_server ${WEB_SRC} src/matrix.cpp)
 target_link_libraries(web_server PRIVATE ${OpenCV_LIBS})
+target_link_libraries(web_server PRIVATE Eigen3::Eigen)

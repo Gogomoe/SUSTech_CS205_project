@@ -3,7 +3,10 @@
 
 #include <memory>
 #include <complex>
+#include <tuple>
+#include <Eigen/Dense>
 #include <opencv2/core/mat.hpp>
+#include <opencv2/core/eigen.hpp>
 
 #include "Complex.hpp"
 
@@ -395,13 +398,13 @@ namespace matrix {
                     #pragma omp parallel for reduction(+: sumVal) collapse(2)
                     for (int i = 0; i < knl.rows_; ++i) {
                         for (int j = 0; j < knl.cols_; ++j) {
-                            sumVal += trans.unsafe(i, j) * unsafe(dst_i + i, dst_j + j);  
+                            sumVal += trans.unsafe(i, j) * unsafe(dst_i + i, dst_j + j);
                         }
                     }
                     result.unsafe(dst_i, dst_j) = sumVal;
                 }
             }
-            
+
             return result;
         }
 
@@ -483,6 +486,24 @@ namespace matrix {
             return result;
         }
 
+        std::vector<std::pair<T, std::vector<T>>> eigen() const {
+            cv::Mat_<T> mat = (cv::Mat_<T>) *this;
+            cv::Mat_<T> valuesMat;
+            cv::Mat_<T> vectorsMat;
+
+            cv::eigen(mat, valuesMat, vectorsMat);
+
+            std::vector<std::pair<T, std::vector<T>>> result;
+            for (int i = 0; i < valuesMat.rows; ++i) {
+                std::vector<T> vec;
+                for (int j = 0; j < vectorsMat.cols; ++j) {
+                    vec.push_back(vectorsMat[i][0]);
+                }
+                result.push_back(std::make_pair(valuesMat[i][0], vec));
+            }
+            return result;
+        }
+
         Matrix<T> sliceRow(int start = 0, int end = -1, int step = 1) {
             return sliceRow(makeSlice(start, end, step, rows_));
         }
@@ -537,7 +558,7 @@ namespace matrix {
 
         Matrix<T> slice(const std::vector<int> &rows, const std::vector<int> &cols) {
             Matrix<T> result(rows.size(), cols.size(), false);
-            
+
             #pragma omp parallel sections
             {
                 #pragma omp section
@@ -550,7 +571,7 @@ namespace matrix {
                     checkBound(col, 0, cols_);
                 }
             }
-            
+
             #pragma omp parallel for collapse(2)
             for (size_t i = 0; i < rows.size(); ++i) {
                 for (size_t j = 0; j < cols.size(); ++j) {

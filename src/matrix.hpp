@@ -379,31 +379,29 @@ namespace matrix {
 
             int rows = rows_ - knl.getRows() + 1;
             int cols = cols_ - knl.getCols() + 1;
-            matrix::Matrix<T> result(rows, cols, false);
 
-            const T zero = T();
+            matrix::Matrix<T> result(rows, cols, false);
+            matrix::Matrix<T> trans(knl.getRows(), knl.getCols(), false);
 
             #pragma omp parallel for
-            for (int i = 0; i < result.size_; ++i) {
-                result.unsafe(i) = zero;
+            for (int i = 0; i < knl.size_; ++i) {
+                trans.unsafe(i) = knl.unsafe(knl.size_ - i - 1);
             }
 
-            for (int i = 0; i < knl.getRows(); ++i) {
-                for (int j = 0; j < knl.getCols(); ++j) {
-                    int knl_i = knl.getRows() - i - 1;
-                    int knl_j = knl.getCols() - j - 1;
-                    T k = knl.unsafe(knl_i, knl_j);
-                    #pragma omp parallel for collapse(2)
-                    for (int i_ = 0; i_ < rows_; ++i_) {
-                        for (int j_ = 0; j_ < cols_; ++j_) {
-                            int dst_i = i_ - i;
-                            int dst_j = j_ - j;
-                            if(!(0<=dst_i && dst_i<rows && 0<=dst_j && dst_j<cols)) continue;
-                            result.unsafe(dst_i, dst_j) += unsafe(i_, j_) * k;
+            #pragma omp parallel for
+            for (int dst_i = 0; dst_i < rows; ++dst_i) {
+                for (int dst_j = 0; dst_j < cols; ++dst_j) {
+                    T sumVal = T();
+                    #pragma omp parallel for reduction(+: sumVal) collapse(2)
+                    for (int i = 0; i < knl.rows_; ++i) {
+                        for (int j = 0; j < knl.cols_; ++j) {
+                            sumVal += trans.unsafe(i, j) * unsafe(dst_i + i, dst_j + j);  
                         }
                     }
+                    result.unsafe(dst_i, dst_j) = sumVal;
                 }
             }
+            
             return result;
         }
 

@@ -50,8 +50,16 @@ int main() {
     // testDenseCompute();
     testConv();
     testPad();
-    matrixTransportationTest();
+
+    // test transport
+    transpositionTest();
     matrixConjugationTest();
+
+    // test arithmetic
+    determinantTest();
+    inverseTest();
+    traceTest();
+
     return 0;
 }
 

@@ -3,8 +3,14 @@
 
 #include "../src/Complex.hpp"
 
-bool matrixTransportationTest();
+bool transpositionTest();
 
 bool matrixConjugationTest();
+
+bool determinantTest();
+
+bool inverseTest();
+
+bool traceTest();
 
 #endif //MATRIX_TEST_HPP

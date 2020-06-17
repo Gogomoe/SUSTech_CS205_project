@@ -2,7 +2,7 @@
 
 #include "../src/matrix.hpp"
 
-bool matrixTransportationTest() {
+bool transpositionTest() {
     matrix::Matrix<int> m1(2, 3);
     matrix::Matrix<int> m2(3, 2);
     int vals[6] = {1, 2, 3, 4, 5, 6};

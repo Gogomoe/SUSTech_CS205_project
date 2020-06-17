@@ -32,7 +32,28 @@ template<typename T>
 void handleSum(json &json, Response &resp);
 
 template<typename T>
+void handleAvg(json &json, Response &resp);
+
+template<typename T>
+void handleMax(json &json, Response &resp);
+
+template<typename T>
+void handleMin(json &json, Response &resp);
+
+template<typename T>
 void handleSlice(json &json, Response &resp);
+
+template<typename T>
+void handleTransposition(json &json, Response &resp);
+
+template<typename T>
+void handleDeterminant(json &json, Response &resp);
+
+template<typename T>
+void handleInverse(json &json, Response &resp);
+
+template<typename T>
+void handleTrace(json &json, Response &resp);
 
 template<typename T>
 Matrix<T> fromJson(json json);
@@ -131,6 +152,33 @@ int main() {
         }
     });
 
+    svr.Post("/api/avg", [](const Request &req, Response &resp) {
+        auto body = json::parse(req.body);
+        if (body["type"] == "number") {
+            handleAvg<double>(body, resp);
+        } else {
+            throw std::runtime_error("unsupported avg type");
+        }
+    });
+
+    svr.Post("/api/max", [](const Request &req, Response &resp) {
+        auto body = json::parse(req.body);
+        if (body["type"] == "number") {
+            handleMax<double>(body, resp);
+        } else {
+            throw std::runtime_error("unsupported max type");
+        }
+    });
+
+    svr.Post("/api/min", [](const Request &req, Response &resp) {
+        auto body = json::parse(req.body);
+        if (body["type"] == "number") {
+            handleMin<double>(body, resp);
+        } else {
+            throw std::runtime_error("unsupported min type");
+        }
+    });
+
     svr.Post("/api/slice", [](const Request &req, Response &resp) {
         auto body = json::parse(req.body);
         if (body["type"] == "number") {
@@ -138,7 +186,45 @@ int main() {
         } else if (body["type"] == "string") {
             handleSlice<string>(body, resp);
         } else {
-            throw std::runtime_error("unsupported sum type");
+            throw std::runtime_error("unsupported slice type");
+        }
+    });
+
+    svr.Post("/api/transposition", [](const Request &req, Response &resp) {
+        auto body = json::parse(req.body);
+        if (body["type"] == "number") {
+            handleTransposition<double>(body, resp);
+        } else if (body["type"] == "string") {
+            handleTransposition<string>(body, resp);
+        } else {
+            throw std::runtime_error("unsupported transposition type");
+        }
+    });
+
+    svr.Post("/api/determinant", [](const Request &req, Response &resp) {
+        auto body = json::parse(req.body);
+        if (body["type"] == "number") {
+            handleDeterminant<double>(body, resp);
+        } else {
+            throw std::runtime_error("unsupported determinant type");
+        }
+    });
+
+    svr.Post("/api/inverse", [](const Request &req, Response &resp) {
+        auto body = json::parse(req.body);
+        if (body["type"] == "number") {
+            handleInverse<double>(body, resp);
+        } else {
+            throw std::runtime_error("unsupported inverse type");
+        }
+    });
+
+    svr.Post("/api/trace", [](const Request &req, Response &resp) {
+        auto body = json::parse(req.body);
+        if (body["type"] == "number") {
+            handleTrace<double>(body, resp);
+        } else {
+            throw std::runtime_error("unsupported trace type");
         }
     });
 
@@ -204,6 +290,48 @@ template<typename T>
 void handleSum(json &json, Response &resp) {
     Matrix<T> mat1 = fromJson<T>(json["mat1"]);
     resp.set_content(toJson(toMatrix<T>(mat1.sum())).dump(), "application/json");
+}
+
+template<typename T>
+void handleAvg(json &json, Response &resp) {
+    Matrix<T> mat1 = fromJson<T>(json["mat1"]);
+    resp.set_content(toJson(toMatrix<T>(mat1.avg())).dump(), "application/json");
+}
+
+template<typename T>
+void handleMax(json &json, Response &resp) {
+    Matrix<T> mat1 = fromJson<T>(json["mat1"]);
+    resp.set_content(toJson(toMatrix<T>(mat1.max())).dump(), "application/json");
+}
+
+template<typename T>
+void handleMin(json &json, Response &resp) {
+    Matrix<T> mat1 = fromJson<T>(json["mat1"]);
+    resp.set_content(toJson(toMatrix<T>(mat1.min())).dump(), "application/json");
+}
+
+template<typename T>
+void handleTransposition(json &json, Response &resp) {
+    Matrix<T> mat1 = fromJson<T>(json["mat1"]);
+    resp.set_content(toJson(mat1.transposition()).dump(), "application/json");
+}
+
+template<typename T>
+void handleDeterminant(json &json, Response &resp) {
+    Matrix<T> mat1 = fromJson<T>(json["mat1"]);
+    resp.set_content(toJson(toMatrix<T>(mat1.determinant(mat1.getRows()))).dump(), "application/json");
+}
+
+template<typename T>
+void handleInverse(json &json, Response &resp){
+    Matrix<T> mat1 = fromJson<T>(json["mat1"]);
+    resp.set_content(toJson(mat1.inverse()).dump(), "application/json");
+}
+
+template<typename T>
+void handleTrace(json &json, Response &resp){
+    Matrix<T> mat1 = fromJson<T>(json["mat1"]);
+    resp.set_content(toJson(toMatrix(mat1.trace())).dump(), "application/json");
 }
 
 template<typename T>

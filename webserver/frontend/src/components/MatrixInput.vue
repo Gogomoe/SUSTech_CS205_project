@@ -31,6 +31,29 @@
                 <a-col :span="4">
                     <a-button v-on:click="sum" style="width: 100%">sum</a-button>
                 </a-col>
+                <a-col :span="4">
+                    <a-button v-on:click="avg" style="width: 100%">average</a-button>
+                </a-col>
+                <a-col :span="4">
+                    <a-button v-on:click="max" style="width: 100%">max</a-button>
+                </a-col>
+                <a-col :span="4">
+                    <a-button v-on:click="min" style="width: 100%">min</a-button>
+                </a-col>
+            </a-row>
+            <a-row :gutter="24" style="padding: 0.5em 0">
+                <a-col :span="4">
+                    <a-button v-on:click="transposition" style="width: 100%">A<sup>T</sup></a-button>
+                </a-col>
+                <a-col :span="4">
+                    <a-button v-on:click="determinant" style="width: 100%">determinant</a-button>
+                </a-col>
+                <a-col :span="4">
+                    <a-button v-on:click="inverse" style="width: 100%">A<sup>-1</sup></a-button>
+                </a-col>
+                <a-col :span="4">
+                    <a-button v-on:click="trace" style="width: 100%">trace</a-button>
+                </a-col>
             </a-row>
             <a-row :gutter="24" style="padding: 0.5em 0">
                 <a-col :span="2" style="line-height: 32px">
@@ -103,6 +126,13 @@
         methods: {
             negative: unaryOperate("/api/negative"),
             sum: unaryOperate("/api/sum"),
+            avg: unaryOperate("/api/avg"),
+            max: unaryOperate("/api/max"),
+            min: unaryOperate("/api/min"),
+            transposition: unaryOperate("/api/transposition"),
+            determinant: unaryOperate("/api/determinant"),
+            inverse: unaryOperate("/api/inverse"),
+            trace: unaryOperate("/api/trace"),
             slice: async function () {
                 let matrix = this.readMatrix();
                 let isNumber = matrix.type === "number";
